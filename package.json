@@ -8,7 +8,8 @@
     "build": "node scripts/build.mjs",
     "demo": "python3 -m http.server 4173 --directory demo",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval": "node scripts/run-eval.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",

@@ -9,5 +9,6 @@
     "skipLibCheck": true,
     "types": ["chrome", "vitest/globals"]
   },
-  "include": ["src", "extension", "test"]
+  "include": ["src", "extension", "test", "eval"],
+  "exclude": ["eval/run.ts"]
 }

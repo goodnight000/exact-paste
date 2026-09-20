@@ -35,6 +35,20 @@ npm run demo
 
 Open http://127.0.0.1:4173, copy the sample resume, paste into Email (should insert only the address), then into Full name (Jev), then into the comment box (whole resume).
 
+## Eval
+
+`npm test` is free: slot detection, fixture sanity, fast-path and secret cases, scoring.
+
+`npm run eval` hits live Jev with the key in `.env`. It scores each paste as:
+
+- **pass** — inserted text is exactly the accepted value
+- **safe_miss** — we wanted a slice, dumped the whole chunk (never a blank, never a wrong value)
+- **unsafe** — a wrong slice, or a slice when the whole chunk was required
+
+Unsafe fails the process. Safe misses are reported and still exit 0.
+
+Fixtures live in `eval/`.
+
 ## Behaviour
 
 | Focus | Result |
