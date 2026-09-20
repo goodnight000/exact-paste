@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Exact Paste</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 ui-sans-serif, system-ui, sans-serif;
+        padding: 20px 22px 24px;
+        min-width: 320px;
+      }
+      h1 {
+        font-size: 16px;
+        font-weight: 650;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 14px;
+        color: CanvasText;
+        opacity: 0.8;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font: inherit;
+        border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+        border-radius: 6px;
+        background: Canvas;
+        color: CanvasText;
+      }
+      button {
+        margin-top: 12px;
+        padding: 7px 12px;
+        font: inherit;
+        border: 0;
+        border-radius: 6px;
+        background: CanvasText;
+        color: Canvas;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 10px;
+        font-size: 12px;
+        min-height: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Exact Paste</h1>
+    <p>
+      Paste in a Chrome form field. A matching value from what you copied goes in that box. Anything
+      uncertain pastes the whole chunk. Shift+paste always pastes the whole chunk.
+    </p>
+    <label for="key">TypeSafe API key</label>
+    <input id="key" type="password" autocomplete="off" spellcheck="false" />
+    <button id="save" type="button">Save</button>
+    <div id="status"></div>
+    <script src="options.js"></script>
+  </body>
+</html>

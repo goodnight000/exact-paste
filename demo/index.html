@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exact Paste demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        font: 15px/1.45 ui-sans-serif, system-ui, sans-serif;
+        background: #f4f1ea;
+        color: #1a1a1a;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 28px 80px;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin: 28px 0 10px;
+      }
+      p,
+      pre {
+        margin: 0 0 16px;
+      }
+      pre {
+        white-space: pre-wrap;
+        background: #fff;
+        border: 1px solid #ddd6c8;
+        padding: 16px 18px;
+        font: 13px/1.5 ui-monospace, Menlo, monospace;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin: 0 0 6px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 14px;
+        padding: 9px 10px;
+        font: inherit;
+        border: 1px solid #d0c8b8;
+        border-radius: 6px;
+        background: #fff;
+      }
+      textarea {
+        min-height: 90px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid #ddd6c8;
+        padding: 22px 22px 10px;
+      }
+      .hint {
+        font-size: 13px;
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section>
+        <h1>Copy this</h1>
+        <p class="hint">
+          Select the block, copy, then paste into a field on the right. Email/phone/URL should
+          slice without Jev. Names and company go through Jev. The tweet box and comment must stay
+          whole.
+        </p>
+        <pre id="resume">
+Marcus Lowe
+Co-founder &amp; CEO
+marcus@anything.com
+https://skydive.com
+https://x.com/marcus_lowe
+San Francisco, CA
+
+PROFILE
+Product-minded technology founder building AI systems that help people turn ideas into working software.
+
+EXPERIENCE
+Co-founder &amp; CEO
+Skydive
+        </pre>
+      </section>
+      <section>
+        <h1>Paste here</h1>
+        <form class="panel" action="#" onsubmit="return false">
+          <h2>Job application</h2>
+          <label for="name">Full name</label>
+          <input id="name" name="name" type="text" autocomplete="name" />
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" />
+          <label for="location">Current location</label>
+          <input id="location" name="location" type="text" placeholder="City, State" />
+          <label for="url">X / Twitter profile</label>
+          <input id="url" name="url" type="url" placeholder="https://x.com/username" />
+          <label for="company">Current company</label>
+          <input id="company" name="company" type="text" autocomplete="organization" />
+          <label for="role">Current role</label>
+          <input id="role" name="role" type="text" autocomplete="organization-title" />
+          <label for="summary">Professional summary</label>
+          <textarea id="summary" name="summary"></textarea>
+        </form>
+        <div class="panel">
+          <h2>Must paste the whole chunk</h2>
+          <label for="search">Search</label>
+          <input id="search" type="search" placeholder="Search" />
+          <label for="comment">Leave a comment</label>
+          <textarea id="comment" placeholder="Leave a comment"></textarea>
+          <label>Tweet</label>
+          <div contenteditable="true" role="textbox" style="min-height: 72px; border: 1px solid #d0c8b8; border-radius: 6px; padding: 9px 10px; margin-bottom: 14px">
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
