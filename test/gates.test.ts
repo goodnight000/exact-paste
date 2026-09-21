@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { looksSecret, shapeOk } from "../src/gates";
+import { isUrl, looksSecret, shapeOk } from "../src/gates";
 import type { FieldInfo } from "../src/types";
 
 const email: FieldInfo = {
@@ -30,6 +30,12 @@ describe("gates", () => {
   it("rejects a sentence in an email field", () => {
     expect(shapeOk(email, "reach me at marcus@anything.com please")).toBe(false);
     expect(shapeOk(email, "marcus@anything.com")).toBe(true);
+  });
+
+  it("does not treat money as a URL", () => {
+    expect(isUrl("1240.00")).toBe(false);
+    expect(isUrl("nia.audio")).toBe(true);
+    expect(isUrl("https://nia.audio")).toBe(true);
   });
 
   it("rejects an email in a name field", () => {

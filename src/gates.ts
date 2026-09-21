@@ -38,7 +38,8 @@ export function isEmail(value: string): boolean {
 export function isUrl(value: string): boolean {
   const trimmed = value.trim();
   if (/^https?:\/\/[^\s]+$/.test(trimmed)) return true;
-  return /^(www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(trimmed);
+  if (/^\d+(\.\d+)+$/.test(trimmed)) return false;
+  return /^(www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(trimmed);
 }
 
 export function isPhone(value: string): boolean {
