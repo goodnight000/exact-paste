@@ -1,5 +1,6 @@
 import { candidates } from "./candidates";
 import { isEmail, isPhone, isSubstring, isUrl, lead, looksSecret, shapeOk, uniqueMatches, EMAIL_RE, PHONE_RE, URL_RE } from "./gates";
+import { nameFastPath } from "./names";
 import type { Candidate, Decision, FieldInfo, JevAsk, JevChoice, JevNoul } from "./types";
 
 const WANT_MIN = 0.72;
@@ -29,6 +30,10 @@ function fastPath(clipboard: string, field: FieldInfo): Decision | null {
   if (field.kind === "tel") {
     const phones = uniqueMatches(clipboard, PHONE_RE);
     if (phones.length === 1 && isPhone(phones[0])) return slice(phones[0], "one-phone");
+  }
+  const name = nameFastPath(clipboard, field);
+  if (name && isSubstring(clipboard, name.value) && shapeOk(field, name.value)) {
+    return slice(name.value, name.reason);
   }
   return null;
 }

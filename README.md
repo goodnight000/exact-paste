@@ -54,10 +54,19 @@ Fixtures live in `eval/`.
 | Focus | Result |
 | --- | --- |
 | Email / phone / URL and the chunk has exactly one | That value, no model call |
-| Name, company, city, title, summary | Jev picks a substring, then a second check. Fail → whole chunk |
+| First / last / full name and exactly one person in the chunk | Split in code, no model call |
+| Company, city, title, summary, or two people in the chunk | Jev picks a substring, then a second check. Fail → whole chunk |
 | Comment, tweet, search, password, unlabeled box | Chrome’s normal paste |
 | No key, timeout, error | Whole chunk |
 
 Jev never writes text. Code copies a slice of what you copied. Model: `jev-1.13.0`.
+
+## Privacy
+
+The extension reads clipboard text only from the paste event, on pages you paste into. It does not watch copies in the background.
+
+When it tries a smart slice, the pasted text and the field’s label/type are sent to [TypeSafe](https://typesafe.ai) (`api.typesafe.ai`) so Jev can pick a substring. Secrets (private keys, card-shaped numbers) are not sent; those pastes stay local and whole. Email/phone/URL with exactly one match, and a single person’s first/last/full name, are decided on-device and never leave the machine.
+
+Your API key stays in `.env` / `chrome.storage.local`. Do not commit `.env` or a built `dist/` that has a key baked in.
 
 See [SPEC.md](./SPEC.md) for the full contract.

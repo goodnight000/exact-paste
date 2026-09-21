@@ -56,4 +56,11 @@ describe("decide fast path and secrets (no Jev)", () => {
     const got = await decide(fixture.clipboard, fixture.field, null);
     expect(got).toMatchObject({ mode: "slice", value: "priya.shah@example.com" });
   });
+
+  it("splits first and last name in code", async () => {
+    const first = await decide(byId["first-name"].clipboard, byId["first-name"].field, null);
+    const last = await decide(byId["last-name"].clipboard, byId["last-name"].field, null);
+    expect(first).toMatchObject({ mode: "slice", value: "Jane", reason: "first-name" });
+    expect(last).toMatchObject({ mode: "slice", value: "Doe", reason: "last-name" });
+  });
 });
