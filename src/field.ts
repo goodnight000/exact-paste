@@ -1,6 +1,6 @@
 import type { FieldInfo, FieldKind } from "./types";
 
-const SLOT_TYPES = new Set(["text", "email", "tel", "url"]);
+const SLOT_TYPES = new Set(["text", "email", "tel", "url", "number"]);
 const SLOT_AUTOCOMPLETE = new Set([
   "email",
   "username",
@@ -37,7 +37,7 @@ const COMPOSER_RE =
   /\b(comment|comments|tweet|search|chat|compose|conversation|reply to)\b/i;
 
 const SLOT_LABEL_RE =
-  /\b(email|e-mail|phone|mobile|name|first name|last name|full name|company|organization|title|role|city|location|address|website|url|linkedin|twitter|github|summary|bio|cover letter|profile)\b/i;
+  /\b(email|e-mail|phone|mobile|tel|name|first name|last name|full name|company|organization|vendor|payee|supplier|title|role|city|location|address|street|zip|postal|country|state|province|website|url|linkedin|twitter|github|summary|bio|cover letter|profile|invoice|amount|total|due|recipient|guest)\b/i;
 
 const TEXTAREA_SLOT_RE =
   /\b(summary|bio|profile|cover letter|professional|headline|about you|about me)\b/i;
@@ -114,10 +114,11 @@ export function isSlot(el: EventTarget | null): el is HTMLInputElement | HTMLTex
 
   if (kind === "email" || kind === "url" || kind === "tel") return true;
   if (auto.some((token) => SLOT_AUTOCOMPLETE.has(token))) return true;
+  if (el.type === "number" && /\b(amount|total|price|qty|quantity)\b/i.test(blob)) return true;
   if (el instanceof HTMLTextAreaElement) {
     return TEXTAREA_SLOT_RE.test(blob) || (inForm && hasLabel && SLOT_LABEL_RE.test(blob));
   }
-  if (inForm && (hasLabel || el.name || el.placeholder)) return true;
+  if (SLOT_LABEL_RE.test(blob)) return true;
   if (hasLabel && SLOT_LABEL_RE.test(label)) return true;
   return false;
 }

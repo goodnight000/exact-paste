@@ -83,10 +83,10 @@ export async function decide(
   ask: JevAsk | null,
 ): Promise<Decision> {
   if (!clipboard) return whole(clipboard, "empty");
-  if (looksSecret(clipboard)) return whole(clipboard, "secret");
 
   const quick = fastPath(clipboard, field);
   if (quick) return quick;
+  if (looksSecret(clipboard)) return whole(clipboard, "secret");
   if (!ask) return whole(clipboard, "no-model");
 
   const options = candidates(clipboard);

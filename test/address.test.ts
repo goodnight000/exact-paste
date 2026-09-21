@@ -17,9 +17,11 @@ describe("usPlace", () => {
   it("reads one US city-state-zip line and the street above it", () => {
     expect(usPlace(letter)).toEqual({
       street: "914 N Damen Ave",
+      unit: null,
       city: "Chicago",
       state: "IL",
       zip: "60622",
+      country: null,
     });
   });
 });

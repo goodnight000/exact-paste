@@ -1,5 +1,5 @@
 import { amounts, dueDates, invoiceNumbers, orgNames } from "./business";
-import { EMAIL_RE, PHONE_RE, URL_RE, uniqueMatches } from "./gates";
+import { EMAIL_RE, PHONE_RE, URL_RE, BARE_URL_RE, uniqueMatches } from "./gates";
 import type { Candidate } from "./types";
 
 const NAME_RE = /\b[A-Z][a-z]+(?:[.'-][A-Z]?[a-z]+)*(?:\s+[A-Z][a-z]+(?:[.'-][A-Z]?[a-z]+)*){0,3}\b/g;
@@ -32,6 +32,7 @@ export function candidates(clipboard: string): Candidate[] {
 
   for (const email of uniqueMatches(source, EMAIL_RE)) add(out, seen, source, email, "e");
   for (const url of uniqueMatches(source, URL_RE)) add(out, seen, source, url, "u");
+  for (const url of uniqueMatches(source, BARE_URL_RE)) add(out, seen, source, url, "b");
   for (const phone of uniqueMatches(source, PHONE_RE)) add(out, seen, source, phone, "p");
   for (const id of invoiceNumbers(source)) add(out, seen, source, id, "i");
   for (const org of orgNames(source)) add(out, seen, source, org, "o");

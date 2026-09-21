@@ -8,13 +8,10 @@ On `paste` in Chrome:
 
 1. If the focused control is not a form slot, do not touch the event. Chrome pastes as usual.
 2. If it is a form slot, cancel the default paste and write **this field only**.
-3. The written text is either:
-   - an exact contiguous substring of the clipboard, the value that belongs in this field, or
-   - the entire clipboard text.
-4. If anything is uncertain, slow, or missing (no API key, timeout, bad model answer, secret-looking clipboard, field changed), write the **entire clipboard**.
-5. Hold Shift while pasting (`Cmd+Shift+V` / `Ctrl+Shift+V`) to always paste the whole chunk.
+3. If a slice is found, replace this field with that substring.
+4. If anything is uncertain, do **not** wipe a value that is already in the field. Empty fields get the whole clipboard (same as a normal paste). Shift+paste always uses Chrome’s paste.
 
-Wrong is worse than dumb. Dumb is the full paste.
+Wrong is worse than dumb. Dumb is leaving the field or pasting the whole chunk, not inventing text.
 
 ## Form slot (code, conservative)
 
@@ -32,7 +29,7 @@ A slot is a visible, enabled, not-read-only `input` or `textarea` that looks lik
 
 - `input type=email|tel|url`
 - autocomplete in the name/email/phone/address/organization family
-- inside a `<form>` (or labelled control) with a real label, placeholder, name, or aria-label
+- a label or autocomplete that looks like a stored value (name, email, address, invoice, vendor, amount, …), not every text box in a form
 - textarea labelled like summary, bio, cover letter, title, company, location
 
 Nearby field labels are sent as context. They are never written.
@@ -59,7 +56,10 @@ Dedupe by exact text. Cap 40 plus `whole` and `none`.
 - First / last / middle / full name fields: if the chunk contains exactly one person name (or a `Name:` line), split on whitespace. First token → first name, last token → last name (particles like `van` stay on the last name). Two people in the chunk → no guess, fall through to Jev or whole
 - Street / city / state / ZIP: if the chunk contains exactly one `City, ST 12345` line, take city, state, ZIP from it and the numbered street line above it
 - Invoice / vendor / amount / due date: if the field looks like that and the chunk has exactly one `INV-123`, `… LLC` / `Please pay …`, `1234.00`, or `Due: …` value, use it
-- Clipboard looks like a secret (private key, credit-card-shaped run) → whole, and do not call the model
+- Country: only if those words actually appear (`United States`, `Canada`, …), never inferred from a state code
+- Unit/apt line under the street when present
+- Canadian `City, ON M5V 2T6` and UK postcode lines
+- Fast path still runs if the clipboard also contains a secret; the secret only blocks sending the chunk to Jev
 
 ### Jev (`jev-1.13.0`)
 

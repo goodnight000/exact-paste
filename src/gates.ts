@@ -1,8 +1,9 @@
 import type { FieldInfo } from "./types";
 
-export const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+export const EMAIL_RE = /[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/g;
 export const URL_RE = /https?:\/\/[^\s<>"'`]+/gi;
-export const PHONE_RE = /(?<!\w)(?:\+?\d[\d().\s-]{7,}\d)/g;
+export const BARE_URL_RE = /\b(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s<>"'`]*)?/gi;
+export const PHONE_RE = /(?<!\w)(?:\+?\d[\d().\s-]{6,}\d)/g;
 
 const CARD_RE = /\b(?:\d[ -]*?){13,19}\b/;
 const PRIVATE_KEY_RE = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/;
@@ -31,11 +32,13 @@ export function looksSecret(clipboard: string): boolean {
 }
 
 export function isEmail(value: string): boolean {
-  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim());
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
 export function isUrl(value: string): boolean {
-  return /^https?:\/\/[^\s]+$/.test(value.trim());
+  const trimmed = value.trim();
+  if (/^https?:\/\/[^\s]+$/.test(trimmed)) return true;
+  return /^(www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(trimmed);
 }
 
 export function isPhone(value: string): boolean {

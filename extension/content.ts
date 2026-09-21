@@ -1,5 +1,5 @@
 import { deepActiveElement, describeField, isSlot } from "../src/field";
-import { insertValue } from "../src/insert";
+import { applyPaste } from "../src/apply";
 import type { Decision, FieldInfo } from "../src/types";
 
 let armed = false;
@@ -69,8 +69,8 @@ document.addEventListener(
         decision = { value: text, mode: "whole", reason: "worker" };
       }
       if (!el.isConnected) return;
-      insertValue(el, decision.value);
-      toast(decision.mode, decision.value);
+      applyPaste(el, decision, text);
+      toast(decision.mode, el.value);
     })();
   },
   { capture: true },

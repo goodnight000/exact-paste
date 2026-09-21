@@ -50,6 +50,14 @@ describe("decide", () => {
     expect(ask).not.toHaveBeenCalled();
   });
 
+  it("still slices an email when the same chunk contains a card-shaped number", async () => {
+    const ask = askWith({});
+    const mixed = "marcus@anything.com\ncard 4242424242424242";
+    const result = await decide(mixed, emailField, ask);
+    expect(result).toMatchObject({ value: "marcus@anything.com", mode: "slice" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
   it("pastes the whole chunk when the clipboard looks secret", async () => {
     const ask = askWith({});
     const secret = "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----";

@@ -17,11 +17,16 @@ export function invoiceNumbers(clipboard: string): string[] {
   for (const match of clipboard.matchAll(/\bINV[-_]\d[A-Z0-9]*\b/gi)) {
     found.push(match[0]);
   }
+  for (const match of clipboard.matchAll(/\bPO[- ]?\d{3,}\b/gi)) {
+    found.push(match[0]);
+  }
   for (const match of clipboard.matchAll(/\binvoice(?:\s+(?:number|no\.?|#))?\s*[:#]?\s*([A-Z]{2,8}[-_]\d{2,}|[A-Z]{2,8}\d{3,})\b/gi)) {
     if (match[1]) found.push(match[1]);
   }
   return unique(clipboard, found);
 }
+
+const FIRM = /\b(Electric|Studio|Press|Labs|Audio|Builds|Partners|Group|Holdings|Digital|Media|Works|Company)\b/;
 
 export function orgNames(clipboard: string): string[] {
   const found: string[] = [];
@@ -32,6 +37,17 @@ export function orgNames(clipboard: string): string[] {
     /\b([A-Z][\w&.'-]*(?:\s+[A-Z][\w&.'-]*){0,5}\s(?:LLC|L\.L\.C\.|Inc\.?|Ltd\.?|LLP|Corp\.?|GmbH))\b/g,
   )) {
     if (match[1]) found.push(match[1]);
+  }
+  for (const line of clipboard.split(/\r?\n/).map((row) => row.trim())) {
+    if (
+      line &&
+      FIRM.test(line) &&
+      /^[A-Z]/.test(line) &&
+      !/^(Please|Don't|The|This|For)\b/.test(line) &&
+      line.split(/\s+/).length <= 5
+    ) {
+      found.push(line);
+    }
   }
   return unique(clipboard, found);
 }
@@ -60,6 +76,12 @@ export function dueDates(clipboard: string): string[] {
   }
   for (const match of clipboard.matchAll(/\bdue\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\b/gi)) {
     if (match[1]) found.push(match[1]);
+  }
+  for (const match of clipboard.matchAll(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/g)) {
+    found.push(match[1]!);
+  }
+  for (const match of clipboard.matchAll(/\b(\d{4}-\d{2}-\d{2})\b/g)) {
+    found.push(match[1]!);
   }
   return unique(clipboard, found);
 }
