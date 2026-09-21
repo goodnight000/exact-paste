@@ -3,235 +3,174 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Keel — New outbound</title>
+    <title>Keel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap"
+    />
     <style>
       :root {
-        --bg: #161616;
-        --rail: #1c1c1c;
-        --line: #2c2c2c;
-        --text: #e0e0e0;
-        --muted: #8d8d8d;
-        --field: #121212;
-        --accent: #7a9478;
+        --bg: #1a1a1a;
+        --bar: #222;
+        --paper: #efece4;
+        --ink: #1c1b18;
+        --ink-dim: #5c5850;
+        --line: #333;
+        --field: #2a2a2a;
+        --text: #ececec;
+        --muted: #9a9a9a;
+        --accent: #c4b48a;
       }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         height: 100%;
-        background: #0e0e0e;
+        background: var(--bg);
         color: var(--text);
-        font: 14px/1.45 "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+        font: 15px/1.45 "IBM Plex Sans", ui-sans-serif, sans-serif;
       }
-      .desk {
+      .app {
         display: grid;
-        grid-template-columns: 240px 1fr;
+        grid-template-rows: 52px 1fr;
         height: 100%;
       }
-      rail {
-        display: block;
-        background: var(--rail);
-        border-right: 1px solid var(--line);
-        padding: 22px 0 28px;
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 0 22px;
+        background: var(--bar);
+        border-bottom: 1px solid var(--line);
       }
-      rail .mark {
-        padding: 0 20px 18px;
-        font-size: 13px;
+      .bar strong {
+        font-size: 12px;
         font-weight: 600;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
-      rail input[type="search"] {
-        display: block;
-        width: calc(100% - 32px);
-        margin: 0 16px 18px;
-        padding: 8px 10px;
-        border: 1px solid var(--line);
+      .bar input[type="search"] {
+        width: 220px;
+        padding: 7px 10px;
+        border: 1px solid #3a3a3a;
         border-radius: 6px;
-        background: var(--field);
+        background: #191919;
         color: var(--text);
         font: inherit;
       }
-      rail h2 {
-        margin: 0 20px 6px;
-        font-size: 11px;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+      .bar .spacer { flex: 1; }
+      .bar em {
+        font-style: normal;
         color: var(--muted);
-      }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
-        padding: 10px 20px;
-        border-top: 1px solid var(--line);
         font-size: 13px;
       }
-      .row small { color: var(--muted); }
-      .row.active { background: #242424; }
-      main.stage {
-        padding: 28px 40px 48px;
+      .work {
+        display: grid;
+        grid-template-columns: minmax(320px, 42%) 1fr;
+        min-height: 0;
+      }
+      .letter {
+        min-height: 0;
         overflow: auto;
+        padding: 36px 40px 48px;
+        background: var(--paper);
+        color: var(--ink);
       }
-      main.stage header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        margin-bottom: 28px;
+      .letter header {
+        margin: 0 0 28px;
+        padding: 0 0 20px;
+        border-bottom: 1px solid #d5d0c6;
+        font-size: 13px;
+        color: var(--ink-dim);
       }
-      main.stage h1 {
+      .letter header b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .letter h1 {
+        margin: 10px 0 0;
+        font: 500 22px/1.25 Newsreader, "Times New Roman", serif;
+        color: var(--ink);
+      }
+      .letter article {
         margin: 0;
-        font-size: 22px;
+        font: 18px/1.55 Newsreader, "Times New Roman", serif;
+        white-space: pre-wrap;
+        user-select: text;
+      }
+      .ship {
+        min-height: 0;
+        overflow: auto;
+        padding: 28px 36px 48px;
+        border-left: 1px solid var(--line);
+      }
+      .ship h2 {
+        margin: 0 0 22px;
+        font-size: 18px;
         font-weight: 500;
       }
-      main.stage header span { color: var(--muted); font-size: 13px; }
       form {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px 20px;
-        max-width: 720px;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px 16px;
+        max-width: 560px;
       }
       label {
         display: flex;
         flex-direction: column;
         gap: 6px;
-        font-size: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
         color: var(--muted);
       }
-      label.wide { grid-column: 1 / -1; }
-      input, textarea {
+      label.span2 { grid-column: span 2; }
+      label.span3 { grid-column: 1 / -1; }
+      input {
         width: 100%;
-        padding: 9px 10px;
-        border: 1px solid var(--line);
-        border-radius: 6px;
+        height: 40px;
+        padding: 0 11px;
+        border: 1px solid #4a4a4a;
+        border-radius: 5px;
         background: var(--field);
         color: var(--text);
-        font: 14px/1.4 "IBM Plex Sans", ui-sans-serif, sans-serif;
+        font: 15px/1 "IBM Plex Sans", ui-sans-serif, sans-serif;
       }
-      textarea { min-height: 72px; resize: vertical; }
-      .actions {
+      input:focus {
+        outline: none;
+        border-color: #8a8a8a;
+      }
+      .go {
         grid-column: 1 / -1;
-        display: flex;
-        gap: 10px;
         margin-top: 8px;
-      }
-      .actions button {
-        font: inherit;
-        padding: 9px 14px;
+        width: fit-content;
+        height: 40px;
+        padding: 0 16px;
         border: 0;
-        border-radius: 6px;
-        cursor: default;
-      }
-      .actions .go { background: var(--accent); color: #111; font-weight: 500; }
-      .actions .quiet { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-
-      .mail {
-        position: fixed;
-        left: 36px;
-        top: 56px;
-        width: 420px;
-        height: min(560px, calc(100vh - 96px));
-        display: flex;
-        flex-direction: column;
-        background: #f3f1ec;
-        color: #1c1c1c;
-        border-radius: 10px;
-        box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
-        overflow: hidden;
-        z-index: 4;
-      }
-      .mail .bar {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        padding: 10px 12px;
-        background: #e7e4dc;
-        font-size: 12px;
-        color: #5c5c5c;
-      }
-      .dot { width: 10px; height: 10px; border-radius: 50%; background: #c9c4b8; }
-      .mail .meta {
-        padding: 16px 20px 12px;
-        border-bottom: 1px solid #ddd8cc;
-        font-size: 13px;
-      }
-      .mail .meta b { font-weight: 600; }
-      .mail .meta div { margin: 0 0 4px; }
-      .mail .meta .subject { font-size: 16px; margin-top: 8px; }
-      .mail article {
-        flex: 1;
-        margin: 0;
-        padding: 18px 20px 24px;
-        overflow: auto;
-        font: 15px/1.55 "IBM Plex Sans", ui-sans-serif, sans-serif;
-        user-select: text;
-        white-space: pre-wrap;
+        border-radius: 5px;
+        background: var(--accent);
+        color: #1a1814;
+        font: 500 14px "IBM Plex Sans", sans-serif;
       }
     </style>
   </head>
   <body>
-    <div class="desk">
-      <rail>
-        <div class="mark">Keel</div>
+    <div class="app">
+      <header class="bar">
+        <strong>Keel</strong>
         <input type="search" placeholder="Search shipments" />
-        <h2>Outbound</h2>
-        <div class="row active"><span>1843 · Chicago</span><small>draft</small></div>
-        <div class="row"><span>1842 · Oakland</span><small>in transit</small></div>
-        <div class="row"><span>1841 · Brooklyn</span><small>label printed</small></div>
-        <div class="row"><span>1838 · Portland</span><small>delivered</small></div>
-      </rail>
-      <main class="stage">
-        <header>
-          <h1>New outbound</h1>
-          <span>Order 1843 · kiln bowls</span>
-        </header>
-        <form action="#" onsubmit="return false">
-          <label>Recipient
-            <input name="name" type="text" autocomplete="name" />
-          </label>
-          <label>Phone
-            <input name="phone" type="tel" autocomplete="tel" />
-          </label>
-          <label class="wide">Email
-            <input name="email" type="email" autocomplete="email" />
-          </label>
-          <label class="wide">Street
-            <input name="street" type="text" autocomplete="street-address" />
-          </label>
-          <label>City
-            <input name="city" type="text" autocomplete="address-level2" />
-          </label>
-          <label>State
-            <input name="state" type="text" autocomplete="address-level1" />
-          </label>
-          <label>ZIP
-            <input name="zip" type="text" autocomplete="postal-code" />
-          </label>
-          <label>Country
-            <input name="country" type="text" autocomplete="country-name" value="United States" />
-          </label>
-          <div class="actions">
-            <button class="go" type="button">Create label</button>
-            <button class="quiet" type="button">Save draft</button>
-          </div>
-        </form>
-      </main>
-    </div>
-
-    <aside class="mail" aria-label="Mail">
-      <div class="bar">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        Inbox
-      </div>
-      <div class="meta">
-        <div>From <b>Elena Voss</b> &lt;elena@voss.studio&gt;</div>
-        <div>To studio@keel.test</div>
-        <div>Tue 11:14 AM</div>
-        <div class="subject">not the studio address</div>
-      </div>
-      <article id="letter">hi, please send the two bowls here, not the studio.
+        <span class="spacer"></span>
+        <em>1843 · kiln bowls</em>
+      </header>
+      <div class="work">
+        <section class="letter">
+          <header>
+            Elena Voss &lt;elena@voss.studio&gt;<br />
+            to studio@keel.test · Tue 11:14 AM
+            <h1>not the studio address</h1>
+          </header>
+          <article id="letter">hi, please send the two bowls here, not the studio.
 
 Elena Voss
 914 N Damen Ave
@@ -240,6 +179,38 @@ elena@voss.studio
 312-555-0198
 
 buzzer 3B. I'm out Thursday.</article>
-    </aside>
+        </section>
+        <section class="ship">
+          <h2>Ship to</h2>
+          <form action="#" onsubmit="return false">
+            <label class="span2">Recipient
+              <input name="name" type="text" autocomplete="name" />
+            </label>
+            <label>Phone
+              <input name="phone" type="tel" autocomplete="tel" />
+            </label>
+            <label class="span3">Email
+              <input name="email" type="email" autocomplete="email" />
+            </label>
+            <label class="span3">Street
+              <input name="street" type="text" autocomplete="street-address" />
+            </label>
+            <label class="span2">City
+              <input name="city" type="text" autocomplete="address-level2" />
+            </label>
+            <label>State
+              <input name="state" type="text" autocomplete="address-level1" />
+            </label>
+            <label>ZIP
+              <input name="zip" type="text" autocomplete="postal-code" />
+            </label>
+            <label class="span2">Country
+              <input name="country" type="text" autocomplete="country-name" value="United States" />
+            </label>
+            <button class="go" type="button">Create label</button>
+          </form>
+        </section>
+      </div>
+    </div>
   </body>
 </html>
