@@ -26,7 +26,11 @@
     "demo": "python3 -m http.server 4173 --directory demo",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "eval": "node scripts/run-eval.mjs"
+    "eval": "node scripts/run-eval.mjs",
+    "open": "node scripts/open-chrome.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.15.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",

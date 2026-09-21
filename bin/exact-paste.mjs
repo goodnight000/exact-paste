@@ -272,17 +272,23 @@ try {
   writeFileSync(join(dist, "LOAD_THIS_FOLDER.txt"), `Load this folder in chrome://extensions (Developer mode → Load unpacked).\n${dist}\n`);
   copyClipboard(dist);
   if (!noOpen) {
-    const next = writeNextStep(dist);
-    openPath(dist);
-    openPath(next);
-    const app = openChromeExtensions();
-    if (app) console.log(`Opened ${app} on chrome://extensions.`);
+    try {
+      const probe = spawnSync("curl", ["-s", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:4173/"], {
+        encoding: "utf8",
+      });
+      if (probe.stdout?.trim() !== "200") {
+        spawn("python3", ["-m", "http.server", "4173", "--directory", join(dir, "demo")], {
+          cwd: dir,
+          detached: true,
+          stdio: "ignore",
+        }).unref();
+      }
+    } catch {
+      // demo server is optional
+    }
+    console.log("Opening Chrome with Exact Paste (current Chrome ignores --load-extension)…");
+    run(process.execPath, [join(dir, "scripts/open-chrome.mjs")], dir);
   }
-  console.log("");
-  console.log("Load unpacked → this folder (also on your clipboard):");
-  console.log(dist);
-  console.log("");
-  console.log("Then paste into a form. Shift+paste always pastes the whole chunk.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);

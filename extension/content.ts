@@ -8,6 +8,8 @@ function mark(state: "on" | "off"): void {
   document.documentElement.dataset.exactPaste = state;
 }
 
+mark("off");
+
 async function refreshArmed(): Promise<boolean> {
   try {
     const status = (await chrome.runtime.sendMessage({ type: "status" })) as {
