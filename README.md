@@ -4,28 +4,25 @@ Chrome extension. Copy a chunk of text. Paste into a web form. If the box wants 
 
 Shift+paste (`Cmd+Shift+V` / `Ctrl+Shift+V`) always pastes the whole chunk.
 
-## Setup
+## Install
 
-You need Node 22+ and a [TypeSafe](https://console.typesafe.ai/settings/keys) API key.
+Node 22+ and a [TypeSafe API key](https://console.typesafe.ai/settings/keys). Chrome cannot load an unpacked extension with zero clicks; this gets you to one.
 
 ```sh
-cd ~/Developer/exact-paste
-cp .env.example .env
-# put TYPESAFE_API_KEY=ts_... in .env
-npm install
-npm test
-npm run build
+npm start
 ```
 
-Load the unpacked extension:
+That checks Node, asks for the key (hidden), proves it against TypeSafe, builds the extension, copies the folder path, and opens Chrome’s extensions page plus Finder on the folder.
 
-1. Open `chrome://extensions`
-2. Enable Developer mode
-3. Load unpacked → choose the `dist` folder
+Then: Developer mode → Load unpacked → select that folder. Reload tabs that were already open.
 
-The key from `.env` is baked into `dist` at build time. You can also paste a key in the extension toolbar popup. Rebuild after changing `.env`.
+If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask again.
 
-Reload any tabs that were already open.
+```sh
+./install.sh
+# later, from a public clone:
+# curl -fsSL https://raw.githubusercontent.com/<you>/exact-paste/main/install.sh | bash
+```
 
 ## Try it
 
