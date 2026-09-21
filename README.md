@@ -30,7 +30,7 @@ From a checkout, the same path is `npm start`. If `TYPESAFE_API_KEY` is already 
 npm run demo
 ```
 
-Open http://127.0.0.1:4173, copy the sample resume, paste into Email (only the address), then Full name, then the comment box (the whole resume).
+Open http://127.0.0.1:4173. Copy the email from Elena, paste into each Keel field. Recipient, email, phone, and street should each get only that value. Search shipments should stay a normal paste.
 
 ## How it decides
 
