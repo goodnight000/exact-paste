@@ -1,6 +1,7 @@
 import { candidates } from "./candidates";
 import { isEmail, isPhone, isSubstring, isUrl, lead, looksSecret, shapeOk, uniqueMatches, EMAIL_RE, PHONE_RE, URL_RE } from "./gates";
 import { addressFastPath } from "./address";
+import { businessFastPath } from "./business";
 import { nameFastPath } from "./names";
 import type { Candidate, Decision, FieldInfo, JevAsk, JevChoice, JevNoul } from "./types";
 
@@ -39,6 +40,10 @@ function fastPath(clipboard: string, field: FieldInfo): Decision | null {
   const place = addressFastPath(clipboard, field);
   if (place && isSubstring(clipboard, place.value) && shapeOk(field, place.value)) {
     return slice(place.value, place.reason);
+  }
+  const business = businessFastPath(clipboard, field);
+  if (business && isSubstring(clipboard, business.value) && shapeOk(field, business.value)) {
+    return slice(business.value, business.reason);
   }
   return null;
 }

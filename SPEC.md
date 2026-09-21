@@ -58,6 +58,7 @@ Dedupe by exact text. Cap 40 plus `whole` and `none`.
 - Same for `url` and `tel`
 - First / last / middle / full name fields: if the chunk contains exactly one person name (or a `Name:` line), split on whitespace. First token → first name, last token → last name (particles like `van` stay on the last name). Two people in the chunk → no guess, fall through to Jev or whole
 - Street / city / state / ZIP: if the chunk contains exactly one `City, ST 12345` line, take city, state, ZIP from it and the numbered street line above it
+- Invoice / vendor / amount / due date: if the field looks like that and the chunk has exactly one `INV-123`, `… LLC` / `Please pay …`, `1234.00`, or `Due: …` value, use it
 - Clipboard looks like a secret (private key, credit-card-shaped run) → whole, and do not call the model
 
 ### Jev (`jev-1.13.0`)

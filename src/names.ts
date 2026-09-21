@@ -24,7 +24,7 @@ export function nameSlot(field: FieldInfo): NameSlot | null {
   if (/\b(last\s*name|family\s*name|surname)\b/i.test(label)) return "last";
   if (/\bmiddle\s*name\b/i.test(label)) return "middle";
   if (/\bfull\s*name\b/i.test(label)) return "full";
-  if (/\bname\b/i.test(label) && !/\b(user|company|org|file|card|host)\s*name\b/i.test(label)) return "full";
+  if (/\bname\b/i.test(label) && !/\b(user|company|org|file|card|host|vendor)\s*name\b/i.test(label)) return "full";
   return null;
 }
 

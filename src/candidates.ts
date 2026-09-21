@@ -1,3 +1,4 @@
+import { amounts, dueDates, invoiceNumbers, orgNames } from "./business";
 import { EMAIL_RE, PHONE_RE, URL_RE, uniqueMatches } from "./gates";
 import type { Candidate } from "./types";
 
@@ -32,6 +33,10 @@ export function candidates(clipboard: string): Candidate[] {
   for (const email of uniqueMatches(source, EMAIL_RE)) add(out, seen, source, email, "e");
   for (const url of uniqueMatches(source, URL_RE)) add(out, seen, source, url, "u");
   for (const phone of uniqueMatches(source, PHONE_RE)) add(out, seen, source, phone, "p");
+  for (const id of invoiceNumbers(source)) add(out, seen, source, id, "i");
+  for (const org of orgNames(source)) add(out, seen, source, org, "o");
+  for (const amount of amounts(source)) add(out, seen, source, amount, "a");
+  for (const date of dueDates(source)) add(out, seen, source, date, "d");
 
   for (const match of source.matchAll(LABEL_LINE_RE)) {
     add(out, seen, source, match[1] ?? "", "l");
