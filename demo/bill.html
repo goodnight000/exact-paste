@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ledger · Enter bill</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500&display=swap" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin:0; height:100%; background:#f3efe6; color:#1c1b18; font:15px/1.45 "IBM Plex Sans", sans-serif; }
+      .app { display:grid; grid-template-rows:52px 1fr; height:100%; }
+      .bar { display:flex; align-items:center; gap:22px; padding:0 22px; background:#ebe6db; border-bottom:1px solid #d9d2c4; }
+      .bar strong { font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
+      .bar a { color:#6a655c; text-decoration:none; font-size:13px; }
+      .spacer { flex:1; }
+      .bar em { font-style:normal; color:#6a655c; font-size:13px; }
+      .work { display:grid; grid-template-columns:minmax(300px, 44%) 1fr; min-height:0; }
+      .invoice { overflow:auto; padding:36px 40px; background:#fffdf8; border-right:1px solid #d9d2c4; font-family:"IBM Plex Serif", serif; }
+      .invoice h1 { margin:0 0 4px; font-size:22px; font-weight:500; }
+      .invoice .num { color:#6a655c; margin:0 0 28px; font:15px "IBM Plex Sans", sans-serif; }
+      .invoice pre { margin:0; font:17px/1.55 "IBM Plex Serif", serif; white-space:pre-wrap; }
+      .enter { overflow:auto; padding:28px 36px; }
+      .enter h2 { margin:0 0 22px; font-size:18px; font-weight:500; }
+      form { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; max-width:520px; }
+      label { display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#6a655c; }
+      .wide { grid-column:1/-1; }
+      input { height:40px; padding:0 11px; border:1px solid #c9c2b4; border-radius:5px; background:#fff; color:#1c1b18; font:15px "IBM Plex Sans", sans-serif; }
+      .go { grid-column:1/-1; margin-top:8px; width:fit-content; height:40px; padding:0 16px; border:0; border-radius:5px; background:#1c1b18; color:#f3efe6; font:500 14px "IBM Plex Sans", sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar">
+        <strong>Ledger</strong>
+        <a href="index.html">Scenes</a>
+        <span class="spacer"></span>
+        <em id="ep-status"></em>
+      </header>
+      <div class="work">
+        <section class="invoice">
+          <h1>Norr Press LLC</h1>
+          <p class="num">INV-8841 · due 12 May 2026</p>
+          <pre>Please pay Norr Press LLC.
+
+Invoice INV-8841
+Amount due: 1240.00
+Due: 12 May 2026
+
+Remit to:
+88 Bond Street
+Brooklyn, NY 11222
+United States
+
+pay@norr.press</pre>
+        </section>
+        <section class="enter">
+          <h2>Enter bill</h2>
+          <form action="#" onsubmit="return false">
+            <label class="wide">Vendor <input name="vendor" type="text" autocomplete="organization" /></label>
+            <label>Invoice number <input name="invoice" type="text" /></label>
+            <label>Amount <input name="amount" type="text" /></label>
+            <label class="wide">Due date <input name="due" type="text" /></label>
+            <label class="wide">Pay to email <input name="email" type="email" autocomplete="email" /></label>
+            <label class="wide">Street <input name="street" type="text" autocomplete="street-address" /></label>
+            <label>City <input name="city" type="text" autocomplete="address-level2" /></label>
+            <label>State <input name="state" type="text" autocomplete="address-level1" /></label>
+            <label>ZIP <input name="zip" type="text" autocomplete="postal-code" /></label>
+            <label class="wide">Country <input name="country" type="text" autocomplete="country-name" /></label>
+            <button class="go" type="button">Save bill</button>
+          </form>
+        </section>
+      </div>
+    </div>
+    <script src="status.js"></script>
+  </body>
+</html>

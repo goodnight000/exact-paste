@@ -3,226 +3,57 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Keel</title>
+    <title>Exact Paste scenes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap"
-    />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
     <style>
-      :root {
-        --bg: #1a1a1a;
-        --bar: #222;
-        --paper: #efece4;
-        --ink: #1c1b18;
-        --ink-dim: #5c5850;
-        --line: #333;
-        --field: #2a2a2a;
-        --text: #ececec;
-        --muted: #9a9a9a;
-        --accent: #c4b48a;
-      }
-      * { box-sizing: border-box; }
       html, body {
         margin: 0;
-        height: 100%;
-        background: var(--bg);
-        color: var(--text);
-        font: 15px/1.45 "IBM Plex Sans", ui-sans-serif, sans-serif;
+        min-height: 100%;
+        background: #141414;
+        color: #e8e8e8;
+        font: 16px/1.45 "IBM Plex Sans", ui-sans-serif, sans-serif;
       }
-      .app {
-        display: grid;
-        grid-template-rows: 52px 1fr;
-        height: 100%;
+      main {
+        width: min(40rem, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 56px 0 80px;
       }
-      .bar {
-        display: flex;
-        align-items: center;
-        gap: 28px;
-        padding: 0 22px;
-        background: var(--bar);
-        border-bottom: 1px solid var(--line);
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 500;
       }
-      .bar strong {
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-      }
-      .bar input[type="search"] {
-        width: 220px;
-        padding: 7px 10px;
-        border: 1px solid #3a3a3a;
-        border-radius: 6px;
-        background: #191919;
-        color: var(--text);
-        font: inherit;
-      }
-      .bar .spacer { flex: 1; }
-      .bar em {
-        font-style: normal;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      .work {
-        display: grid;
-        grid-template-columns: minmax(320px, 42%) 1fr;
-        min-height: 0;
-      }
-      .letter {
-        min-height: 0;
-        overflow: auto;
-        padding: 36px 40px 48px;
-        background: var(--paper);
-        color: var(--ink);
-      }
-      .letter header {
+      p {
         margin: 0 0 28px;
-        padding: 0 0 20px;
-        border-bottom: 1px solid #d5d0c6;
-        font-size: 13px;
-        color: var(--ink-dim);
+        color: #9a9a9a;
       }
-      .letter header b {
-        color: var(--ink);
-        font-weight: 600;
-      }
-      .letter h1 {
-        margin: 10px 0 0;
-        font: 500 22px/1.25 Newsreader, "Times New Roman", serif;
-        color: var(--ink);
-      }
-      .letter article {
-        margin: 0;
-        font: 18px/1.55 Newsreader, "Times New Roman", serif;
-        white-space: pre-wrap;
-        user-select: text;
-      }
-      .ship {
-        min-height: 0;
-        overflow: auto;
-        padding: 28px 36px 48px;
-        border-left: 1px solid var(--line);
-      }
-      .ship h2 {
-        margin: 0 0 22px;
-        font-size: 18px;
-        font-weight: 500;
-      }
-      form {
+      a.row {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 14px 16px;
-        max-width: 560px;
+        grid-template-columns: 7rem 1fr;
+        gap: 16px;
+        padding: 14px 0;
+        border-top: 1px solid #2a2a2a;
+        color: inherit;
+        text-decoration: none;
       }
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 500;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-      label.span2 { grid-column: span 2; }
-      label.span3 { grid-column: 1 / -1; }
-      input {
-        width: 100%;
-        height: 40px;
-        padding: 0 11px;
-        border: 1px solid #4a4a4a;
-        border-radius: 5px;
-        background: var(--field);
-        color: var(--text);
-        font: 15px/1 "IBM Plex Sans", ui-sans-serif, sans-serif;
-      }
-      input:focus {
-        outline: none;
-        border-color: #8a8a8a;
-      }
-      .go {
-        grid-column: 1 / -1;
-        margin-top: 8px;
-        width: fit-content;
-        height: 40px;
-        padding: 0 16px;
-        border: 0;
-        border-radius: 5px;
-        background: var(--accent);
-        color: #1a1814;
-        font: 500 14px "IBM Plex Sans", sans-serif;
-      }
+      a.row:last-of-type { border-bottom: 1px solid #2a2a2a; }
+      a.row b { font-weight: 500; }
+      a.row span { color: #9a9a9a; }
+      #ep-status { font-size: 13px; color: #8a8a8a; }
     </style>
   </head>
   <body>
-    <div class="app">
-      <header class="bar">
-        <strong>Keel</strong>
-        <input type="search" placeholder="Search shipments" />
-        <span class="spacer"></span>
-        <em id="ep-status">checking Exact Paste…</em>
-        <em>1843 · kiln bowls</em>
-      </header>
-      <div class="work">
-        <section class="letter">
-          <header>
-            Elena Voss &lt;elena@voss.studio&gt;<br />
-            to studio@keel.test · Tue 11:14 AM
-            <h1>not the studio address</h1>
-          </header>
-          <article id="letter">hi, please send the two bowls here, not the studio.
-
-Elena Voss
-914 N Damen Ave
-Chicago, IL 60622
-elena@voss.studio
-312-555-0198
-
-buzzer 3B. I'm out Thursday.</article>
-        </section>
-        <section class="ship">
-          <h2>Ship to</h2>
-          <form action="#" onsubmit="return false">
-            <label class="span2">Recipient
-              <input name="name" type="text" autocomplete="name" />
-            </label>
-            <label>Phone
-              <input name="phone" type="tel" autocomplete="tel" />
-            </label>
-            <label class="span3">Email
-              <input name="email" type="email" autocomplete="email" />
-            </label>
-            <label class="span3">Street
-              <input name="street" type="text" autocomplete="street-address" />
-            </label>
-            <label class="span2">City
-              <input name="city" type="text" autocomplete="address-level2" />
-            </label>
-            <label>State
-              <input name="state" type="text" autocomplete="address-level1" />
-            </label>
-            <label>ZIP
-              <input name="zip" type="text" autocomplete="postal-code" />
-            </label>
-            <label class="span2">Country
-              <input name="country" type="text" autocomplete="country-name" value="United States" />
-            </label>
-            <button class="go" type="button">Create label</button>
-          </form>
-        </section>
-      </div>
-    </div>
-    <script>
-      const status = document.getElementById("ep-status");
-      function paint() {
-        const state = document.documentElement.dataset.exactPaste;
-        if (state === "on") status.textContent = "Exact Paste on";
-        else if (state === "off") status.textContent = "Exact Paste off";
-        else status.textContent = "Exact Paste not loaded · chrome://extensions → Load unpacked → dist";
-      }
-      paint();
-      setInterval(paint, 400);
-    </script>
+    <main>
+      <h1>Scenes</h1>
+      <p>Copy the source on the left. Paste into one field at a time.</p>
+      <a class="row" href="keel.html"><b>Ship</b><span>One address in a customer email. Street, city, ZIP from a single copy.</span></a>
+      <a class="row" href="vendor.html"><b>Vendor</b><span>Two people in one thread. Paste should take the electrician Dave said to use.</span></a>
+      <a class="row" href="bill.html"><b>Bill</b><span>A messy invoice. Vendor, number, amount, due date, remit address.</span></a>
+      <a class="row" href="guest.html"><b>Guest</b><span>A plus-one text. First name and last name from one line.</span></a>
+      <a class="row" href="links.html"><b>Links</b><span>Three URLs. Site, GitHub, and LinkedIn each get the matching one.</span></a>
+      <p id="ep-status"></p>
+    </main>
+    <script src="status.js"></script>
   </body>
 </html>

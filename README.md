@@ -30,7 +30,15 @@ From a checkout, the same path is `npm start`. If `TYPESAFE_API_KEY` is already 
 npm run demo
 ```
 
-Open http://127.0.0.1:4173. Copy the email from Elena, paste into each Keel field. Recipient, email, phone, and street should each get only that value. Search shipments should stay a normal paste.
+Open http://127.0.0.1:4173. Copy the source on the left, paste into one field at a time.
+
+| Scene | What it shows |
+| --- | --- |
+| [Ship](http://127.0.0.1:4173/keel.html) | One address. Street, city, ZIP, country. |
+| [Vendor](http://127.0.0.1:4173/vendor.html) | Two people. Should take the electrician Dave said to use, not the other. |
+| [Bill](http://127.0.0.1:4173/bill.html) | Invoice number, amount, due date, remit address. |
+| [Guest](http://127.0.0.1:4173/guest.html) | First name / last name from `Maya Chen`. Dietary notes stays a normal paste. |
+| [Links](http://127.0.0.1:4173/links.html) | Three URLs. Site vs GitHub vs LinkedIn. |
 
 ## How it decides
 

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Floor · Add guest</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin:0; height:100%; background:#111; color:#ececec; font:15px/1.45 "IBM Plex Sans", sans-serif; }
+      .app { display:grid; grid-template-rows:52px 1fr; height:100%; }
+      .bar { display:flex; align-items:center; gap:22px; padding:0 22px; background:#1a1a1a; border-bottom:1px solid #2c2c2c; }
+      .bar strong { font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
+      .bar a { color:#8d8d8d; text-decoration:none; font-size:13px; }
+      .spacer { flex:1; }
+      .bar em { font-style:normal; color:#8d8d8d; font-size:13px; }
+      .work { display:grid; grid-template-columns:1fr 1fr; min-height:0; }
+      .note { overflow:auto; padding:48px 44px; background:#c9b8a0; color:#2a2218; }
+      .note p.who { margin:0 0 24px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; }
+      .note article { margin:0; font:22px/1.45 Fraunces, serif; white-space:pre-wrap; }
+      .card { overflow:auto; padding:36px 40px; }
+      .card h2 { margin:0 0 22px; font-size:18px; font-weight:500; }
+      form { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; max-width:440px; }
+      label { display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#8d8d8d; }
+      .wide { grid-column:1/-1; }
+      input, textarea { padding:0 11px; border:1px solid #3a3a3a; border-radius:5px; background:#1c1c1c; color:#ececec; font:15px "IBM Plex Sans", sans-serif; }
+      input { height:40px; }
+      textarea { height:88px; padding-top:10px; }
+      .go { grid-column:1/-1; margin-top:8px; width:fit-content; height:40px; padding:0 16px; border:0; border-radius:5px; background:#c9b8a0; color:#2a2218; font:500 14px "IBM Plex Sans", sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar">
+        <strong>Floor</strong>
+        <a href="index.html">Scenes</a>
+        <span class="spacer"></span>
+        <em id="ep-status"></em>
+      </header>
+      <div class="work">
+        <section class="note">
+          <p class="who">Text from Priya · table 12</p>
+          <article>bringing a plus one — Maya Chen
+maya.chen@hybrid.audio
+206-555-0133
+no shellfish</article>
+        </section>
+        <section class="card">
+          <h2>Add guest</h2>
+          <form action="#" onsubmit="return false">
+            <label>First name <input name="first" type="text" autocomplete="given-name" /></label>
+            <label>Last name <input name="last" type="text" autocomplete="family-name" /></label>
+            <label class="wide">Email <input name="email" type="email" autocomplete="email" /></label>
+            <label class="wide">Phone <input name="phone" type="tel" autocomplete="tel" /></label>
+            <label class="wide">Dietary notes <textarea name="notes" placeholder="Leave a comment"></textarea></label>
+            <button class="go" type="button">Seat guest</button>
+          </form>
+        </section>
+      </div>
+    </div>
+    <script src="status.js"></script>
+  </body>
+</html>

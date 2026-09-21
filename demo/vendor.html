@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Northline · New vendor</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin:0; height:100%; background:#1b1e22; color:#e4e6e8; font:15px/1.45 "IBM Plex Sans", sans-serif; }
+      .app { display:grid; grid-template-rows:52px 1fr; height:100%; }
+      .bar { display:flex; align-items:center; gap:22px; padding:0 22px; background:#22262b; border-bottom:1px solid #32383f; }
+      .bar strong { font-size:12px; letter-spacing:.12em; text-transform:uppercase; }
+      .bar a { color:#8b939c; text-decoration:none; font-size:13px; }
+      .spacer { flex:1; }
+      .bar em { font-style:normal; color:#8b939c; font-size:13px; }
+      .work { display:grid; grid-template-columns:minmax(300px, 46%) 1fr; min-height:0; }
+      .thread { overflow:auto; padding:28px 28px 40px; background:#16191c; }
+      .msg { margin:0 0 22px; }
+      .msg .who { font-size:12px; color:#8b939c; margin:0 0 6px; }
+      .msg p, .msg pre { margin:0; white-space:pre-wrap; font:15px/1.5 "IBM Plex Sans", sans-serif; }
+      .msg.dave { padding:12px 14px; background:#252a30; border-radius:8px; }
+      .desk { overflow:auto; padding:28px 36px; border-left:1px solid #32383f; }
+      .desk h2 { margin:0 0 6px; font-size:18px; font-weight:500; }
+      .desk .hint { margin:0 0 22px; color:#8b939c; font-size:13px; }
+      form { display:grid; gap:14px; max-width:420px; }
+      label { display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#8b939c; }
+      input { height:40px; padding:0 11px; border:1px solid #3d444c; border-radius:5px; background:#1e2328; color:#e4e6e8; font:15px "IBM Plex Sans", sans-serif; }
+      .go { margin-top:8px; width:fit-content; height:40px; padding:0 16px; border:0; border-radius:5px; background:#7f9aa8; color:#121416; font:500 14px "IBM Plex Sans", sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar">
+        <strong>Northline</strong>
+        <a href="index.html">Scenes</a>
+        <span class="spacer"></span>
+        <em id="ep-status"></em>
+      </header>
+      <div class="work">
+        <section class="thread">
+          <div class="msg">
+            <div class="who">Dave · yesterday</div>
+            <p>don't use Chris for the panel upgrade. Rafael did the loft and actually showed up.</p>
+          </div>
+          <div class="msg dave">
+            <div class="who">Dave</div>
+            <pre>the one you want:
+
+Rafael Mendez
+Mendez Electric
+mendez.electric@fastmail.com
+347-555-0160
+
+not this one:
+
+Chris Lang
+Lang Builds
+chris@langbuilds.com</pre>
+          </div>
+        </section>
+        <section class="desk">
+          <h2>New vendor</h2>
+          <p class="hint">Electrician for the Greene Ave panel.</p>
+          <form action="#" onsubmit="return false">
+            <label>Vendor name <input name="name" type="text" autocomplete="name" /></label>
+            <label>Company <input name="company" type="text" autocomplete="organization" /></label>
+            <label>Email <input name="email" type="email" autocomplete="email" /></label>
+            <label>Phone <input name="phone" type="tel" autocomplete="tel" /></label>
+            <button class="go" type="button">Add vendor</button>
+          </form>
+        </section>
+      </div>
+    </div>
+    <script src="status.js"></script>
+  </body>
+</html>
