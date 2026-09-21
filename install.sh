@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # One line:
-#   curl -fsSL https://raw.githubusercontent.com/<you>/exact-paste/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/goodnight000/exact-paste/main/install.sh | bash
 # From a checkout:
 #   ./install.sh
 #   npm start
@@ -26,12 +26,7 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-REPO="${EXACT_PASTE_REPO:-}"
-if [[ -z "$REPO" ]]; then
-  echo "Set EXACT_PASTE_REPO to the git URL, or run npm start from a checkout." >&2
-  echo "Example: EXACT_PASTE_REPO=https://github.com/you/exact-paste.git bash install.sh" >&2
-  exit 1
-fi
+REPO="${EXACT_PASTE_REPO:-https://github.com/goodnight000/exact-paste.git}"
 
 DIR="${EXACT_PASTE_DIR:-$HOME/.exact-paste}"
 if [[ -d "$DIR/.git" ]]; then

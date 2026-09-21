@@ -4,6 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Paste the exact value a Chrome form field wants, or the whole copied text.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goodnight000/exact-paste.git"
+  },
+  "bugs": {
+    "url": "https://github.com/goodnight000/exact-paste/issues"
+  },
+  "homepage": "https://github.com/goodnight000/exact-paste",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "exact-paste": "./bin/exact-paste.mjs"
   },

@@ -1,28 +1,26 @@
 # Exact Paste
 
-Chrome extension. Copy a chunk of text. Paste into a web form. If the box wants a single value (email, name, city), that exact substring is pasted. If it is not a form field, or the match is unclear, the **whole chunk** is pasted. Other fields are never touched. The field is never left empty.
+Copy a chunk of text. Paste into a Chrome form field. The value that belongs in **that box** is pasted — an email, a name, a city — copied exactly from what you copied. If it is not a form field, or the match is unclear, the **whole chunk** is pasted.
+
+It never invents text. It never fills the other boxes. It never leaves the field empty.
 
 Shift+paste (`Cmd+Shift+V` / `Ctrl+Shift+V`) always pastes the whole chunk.
 
+Powered by [TypeSafe Jev](https://www.typesafe.ai/).
+
 ## Install
 
-Node 22+ and a [TypeSafe API key](https://console.typesafe.ai/settings/keys). Chrome cannot load an unpacked extension with zero clicks; this gets you to one.
+You need [Node 22+](https://nodejs.org) and a [TypeSafe API key](https://console.typesafe.ai/settings/keys). Chrome will not let a script silently install an unpacked extension, so this is one command plus one click.
 
 ```sh
-npm start
+curl -fsSL https://raw.githubusercontent.com/goodnight000/exact-paste/main/install.sh | bash
 ```
 
-That checks Node, asks for the key (hidden), proves it against TypeSafe, builds the extension, copies the folder path, and opens Chrome’s extensions page plus Finder on the folder.
+That clones into `~/.exact-paste`, asks for the key (hidden), checks it against TypeSafe, builds the extension, copies the folder path, and opens Chrome’s extensions page plus Finder on the folder.
 
-Then: Developer mode → Load unpacked → select that folder. Reload tabs that were already open.
+Then: **Developer mode** → **Load unpacked** → select that folder. Reload tabs that were already open.
 
-If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask again.
-
-```sh
-./install.sh
-# later, from a public clone:
-# curl -fsSL https://raw.githubusercontent.com/<you>/exact-paste/main/install.sh | bash
-```
+From a checkout, the same path is `npm start`. If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask again.
 
 ## Try it
 
@@ -30,40 +28,40 @@ If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask a
 npm run demo
 ```
 
-Open http://127.0.0.1:4173, copy the sample resume, paste into Email (should insert only the address), then into Full name (Jev), then into the comment box (whole resume).
+Open http://127.0.0.1:4173, copy the sample resume, paste into Email (only the address), then Full name, then the comment box (the whole resume).
 
-## Eval
-
-`npm test` is free: slot detection, fixture sanity, fast-path and secret cases, scoring.
-
-`npm run eval` hits live Jev with the key in `.env`. It scores each paste as:
-
-- **pass** — inserted text is exactly the accepted value
-- **safe_miss** — we wanted a slice, dumped the whole chunk (never a blank, never a wrong value)
-- **unsafe** — a wrong slice, or a slice when the whole chunk was required
-
-Unsafe fails the process. Safe misses are reported and still exit 0.
-
-Fixtures live in `eval/`.
-
-## Behaviour
+## How it decides
 
 | Focus | Result |
 | --- | --- |
-| Email / phone / URL and the chunk has exactly one | That value, no model call |
-| First / last / full name and exactly one person in the chunk | Split in code, no model call |
+| Email / phone / URL and the chunk has exactly one | That value, on-device |
+| First / last / full name and exactly one person in the chunk | Split in code, on-device |
 | Company, city, title, summary, or two people in the chunk | Jev picks a substring, then a second check. Fail → whole chunk |
 | Comment, tweet, search, password, unlabeled box | Chrome’s normal paste |
 | No key, timeout, error | Whole chunk |
 
 Jev never writes text. Code copies a slice of what you copied. Model: `jev-1.13.0`.
 
+## Eval
+
+`npm test` is free (no API key): slot detection, fixture sanity, fast-path and secret cases.
+
+`npm run eval` hits live Jev. Scoring:
+
+- **pass** — inserted text is exactly the accepted value
+- **safe_miss** — we wanted a slice, dumped the whole chunk
+- **unsafe** — a wrong slice, or a slice when the whole chunk was required
+
+Unsafe fails the process. Fixtures are in `eval/`.
+
 ## Privacy
 
-The extension reads clipboard text only from the paste event, on pages you paste into. It does not watch copies in the background.
+Clipboard text is read only from the paste event, on the page you paste into. It does not watch copies in the background.
 
-When it tries a smart slice, the pasted text and the field’s label/type are sent to [TypeSafe](https://typesafe.ai) (`api.typesafe.ai`) so Jev can pick a substring. Secrets (private keys, card-shaped numbers) are not sent; those pastes stay local and whole. Email/phone/URL with exactly one match, and a single person’s first/last/full name, are decided on-device and never leave the machine.
+When it tries a smart slice, the pasted text and the field’s label/type go to TypeSafe (`api.typesafe.ai`). Private keys and card-shaped numbers are not sent. One-email / one-phone / one-URL and a single person’s name are decided on-device.
 
-Your API key stays in `.env` / `chrome.storage.local`. Do not commit `.env` or a built `dist/` that has a key baked in.
+Do not commit `.env` or a built `dist/` that has a key baked in.
 
-See [SPEC.md](./SPEC.md) for the full contract.
+## License
+
+MIT. See [SPEC.md](./SPEC.md) for the contract and [CONTRIBUTING.md](./CONTRIBUTING.md) to add fixtures.
