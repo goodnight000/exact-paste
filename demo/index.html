@@ -161,6 +161,7 @@
         <strong>Keel</strong>
         <input type="search" placeholder="Search shipments" />
         <span class="spacer"></span>
+        <em id="ep-status">checking Exact Paste…</em>
         <em>1843 · kiln bowls</em>
       </header>
       <div class="work">
@@ -212,5 +213,16 @@ buzzer 3B. I'm out Thursday.</article>
         </section>
       </div>
     </div>
+    <script>
+      const status = document.getElementById("ep-status");
+      function paint() {
+        const state = document.documentElement.dataset.exactPaste;
+        if (state === "on") status.textContent = "Exact Paste on";
+        else if (state === "off") status.textContent = "Exact Paste off";
+        else status.textContent = "Exact Paste not loaded · chrome://extensions → Load unpacked → dist";
+      }
+      paint();
+      setInterval(paint, 400);
+    </script>
   </body>
 </html>

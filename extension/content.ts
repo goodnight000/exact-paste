@@ -2,21 +2,28 @@ import { deepActiveElement, describeField, isSlot } from "../src/field";
 import { insertValue } from "../src/insert";
 import type { Decision, FieldInfo } from "../src/types";
 
-let ready = false;
+let armed = false;
 
-async function refreshReady(): Promise<boolean> {
-  try {
-    const status = (await chrome.runtime.sendMessage({ type: "status" })) as { ready?: boolean };
-    ready = Boolean(status?.ready);
-  } catch {
-    ready = false;
-  }
-  return ready;
+function mark(state: "on" | "off"): void {
+  document.documentElement.dataset.exactPaste = state;
 }
 
-void refreshReady();
+async function refreshArmed(): Promise<boolean> {
+  try {
+    const status = (await chrome.runtime.sendMessage({ type: "status" })) as {
+      ready?: boolean;
+    };
+    armed = Boolean(status?.ready);
+  } catch {
+    armed = false;
+  }
+  mark(armed ? "on" : "off");
+  return armed;
+}
+
+void refreshArmed();
 chrome.storage.onChanged.addListener(() => {
-  void refreshReady();
+  void refreshArmed();
 });
 
 function toast(mode: Decision["mode"], value: string): void {
@@ -36,7 +43,6 @@ document.addEventListener(
   "paste",
   (event) => {
     if ("shiftKey" in event && Boolean((event as { shiftKey?: boolean }).shiftKey)) return;
-    if (!ready) return;
     const target = deepActiveElement();
     if (!isSlot(target)) return;
     const text = event.clipboardData?.getData("text/plain") ?? "";
@@ -48,12 +54,15 @@ document.addEventListener(
     void (async () => {
       let decision: Decision = { value: text, mode: "whole", reason: "fallback" };
       try {
-        const result = (await chrome.runtime.sendMessage({
-          type: "decide",
-          text,
-          field,
-        })) as Decision | undefined;
-        if (result && typeof result.value === "string") decision = result;
+        await refreshArmed();
+        if (armed) {
+          const result = (await chrome.runtime.sendMessage({
+            type: "decide",
+            text,
+            field,
+          })) as Decision | undefined;
+          if (result && typeof result.value === "string") decision = result;
+        }
       } catch {
         decision = { value: text, mode: "whole", reason: "worker" };
       }
