@@ -28,6 +28,20 @@
         font-size: 12px;
         margin-bottom: 6px;
       }
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 14px;
+        cursor: pointer;
+      }
+      .toggle input {
+        width: auto;
+        margin: 0;
+        accent-color: CanvasText;
+      }
       input {
         width: 100%;
         box-sizing: border-box;
@@ -57,6 +71,10 @@
   </head>
   <body>
     <h1>Exact Paste</h1>
+    <label class="toggle">
+      <input id="enabled" type="checkbox" checked />
+      <span id="enabled-label">On</span>
+    </label>
     <p>
       Paste in a Chrome form field. A matching value from what you copied goes in that box. Anything
       uncertain pastes the whole chunk. Shift+paste always pastes the whole chunk.

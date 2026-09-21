@@ -20,6 +20,8 @@ That clones into `~/.exact-paste`, asks for the key (hidden), checks it against 
 
 Then: **Developer mode** → **Load unpacked** → select that folder. Reload tabs that were already open.
 
+Click the toolbar icon to turn Exact Paste off (badge shows **OFF**; paste is normal Chrome). Same toggle: Alt+Shift+V. Shift+paste still forces the whole chunk while it is on.
+
 From a checkout, the same path is `npm start`. If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask again.
 
 ## Try it
