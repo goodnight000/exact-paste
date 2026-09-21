@@ -9,6 +9,14 @@ const CARD_RE = /\b(?:\d[ -]*?){13,19}\b/;
 const PRIVATE_KEY_RE = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/;
 const KEYISH_RE = /\b(?:sk-|rk-|api[_-]?key|AKIA)[A-Za-z0-9_-]{16,}\b/;
 
+export function uniqueUrls(text: string): string[] {
+  const emails = uniqueMatches(text, EMAIL_RE);
+  const full = uniqueMatches(text, URL_RE);
+  const bare = uniqueMatches(text, BARE_URL_RE).filter((url) => !emails.some((email) => email.includes(url)));
+  const all = [...new Set([...full, ...bare])];
+  return all.filter((url) => !all.some((other) => other !== url && other.includes(url)));
+}
+
 export function uniqueMatches(text: string, re: RegExp): string[] {
   const found = text.match(new RegExp(re.source, re.flags)) ?? [];
   const seen = new Set<string>();

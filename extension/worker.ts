@@ -1,6 +1,6 @@
-import { decide } from "../src/decide";
 import { createAsk } from "../src/jev";
-import { isEnabled } from "../src/settings";
+import { resolvePaste } from "../src/resolve";
+import { isEnabled, vaultText } from "../src/settings";
 import { BAKED_API_KEY } from "./baked";
 import type { FieldInfo } from "../src/types";
 
@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
     const key = await apiKey();
     const on = await enabled();
     if (message?.type === "status") {
-      reply({ ready: Boolean(key) && on, enabled: on });
+      reply({ ready: on, enabled: on });
       return;
     }
     if (message?.type !== "decide") {
@@ -58,11 +58,9 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
       reply({ value: text, mode: "whole", reason: "off" });
       return;
     }
-    if (!key) {
-      reply({ value: text, mode: "whole", reason: "no-key" });
-      return;
-    }
-    const decision = await decide(text, field, createAsk(key));
+    const stored = await chrome.storage.local.get("vault");
+    const ask = key ? createAsk(key) : null;
+    const decision = await resolvePaste(text, vaultText(stored), field, ask);
     reply(decision);
   })();
   return true;

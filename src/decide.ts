@@ -1,5 +1,5 @@
 import { candidates } from "./candidates";
-import { isEmail, isPhone, isSubstring, isUrl, lead, looksSecret, shapeOk, uniqueMatches, EMAIL_RE, PHONE_RE, URL_RE } from "./gates";
+import { isEmail, isPhone, isSubstring, isUrl, lead, looksSecret, shapeOk, uniqueMatches, uniqueUrls, EMAIL_RE, PHONE_RE } from "./gates";
 import { addressFastPath } from "./address";
 import { businessFastPath } from "./business";
 import { nameFastPath } from "./names";
@@ -25,9 +25,12 @@ function fastPath(clipboard: string, field: FieldInfo): Decision | null {
     const emails = uniqueMatches(clipboard, EMAIL_RE);
     if (emails.length === 1 && isEmail(emails[0])) return slice(emails[0], "one-email");
   }
-  if (field.kind === "url") {
-    const urls = uniqueMatches(clipboard, URL_RE);
-    if (urls.length === 1 && isUrl(urls[0])) return slice(urls[0], "one-url");
+  const wantsUrl =
+    field.kind === "url" ||
+    /\b(linkedin|github|website|url|portfolio|profile)\b/i.test(`${field.label} ${field.placeholder} ${field.name}`);
+  if (wantsUrl) {
+    const urls = uniqueUrls(clipboard);
+    if (urls.length === 1 && urls[0] && isUrl(urls[0])) return slice(urls[0], "one-url");
   }
   if (field.kind === "tel") {
     const phones = uniqueMatches(clipboard, PHONE_RE);

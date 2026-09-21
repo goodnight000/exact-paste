@@ -47,8 +47,11 @@ document.addEventListener(
     if ("shiftKey" in event && Boolean((event as { shiftKey?: boolean }).shiftKey)) return;
     const target = deepActiveElement();
     if (!isSlot(target)) return;
+    if (!armed) {
+      void refreshArmed();
+      return;
+    }
     const text = event.clipboardData?.getData("text/plain") ?? "";
-    if (!text) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const field: FieldInfo = describeField(target);

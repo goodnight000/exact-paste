@@ -42,7 +42,7 @@
         margin: 0;
         accent-color: CanvasText;
       }
-      input {
+      input, textarea {
         width: 100%;
         box-sizing: border-box;
         padding: 8px 10px;
@@ -51,6 +51,11 @@
         border-radius: 6px;
         background: Canvas;
         color: CanvasText;
+      }
+      textarea {
+        min-height: 140px;
+        resize: vertical;
+        font: 13px/1.45 ui-monospace, Menlo, monospace;
       }
       button {
         margin-top: 12px;
@@ -76,9 +81,19 @@
       <span id="enabled-label">On</span>
     </label>
     <p>
-      Paste in a Chrome form field. A matching value from what you copied goes in that box. Anything
-      uncertain pastes the whole chunk. Shift+paste always pastes the whole chunk.
+      Paste in a Chrome form field. A matching value from what you copied goes in that box. If the
+      copy does not match this box, the vault is used. Shift+paste is always a normal paste.
     </p>
+    <label for="vault">Vault</label>
+    <textarea
+      id="vault"
+      spellcheck="false"
+      placeholder="LinkedIn
+https://www.linkedin.com/in/you
+
+Email
+you@studio.com"
+    ></textarea>
     <label for="key">TypeSafe API key</label>
     <input id="key" type="password" autocomplete="off" spellcheck="false" />
     <button id="save" type="button">Save</button>

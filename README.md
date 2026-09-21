@@ -20,7 +20,9 @@ That clones into `~/.exact-paste`, asks for the key (hidden), checks it against 
 
 Then: **Developer mode** → **Load unpacked** → select that folder. Reload tabs that were already open.
 
-Click the toolbar icon to turn Exact Paste off (badge shows **OFF**; paste is normal Chrome). Same toggle: Alt+Shift+V. Shift+paste still forces the whole chunk while it is on.
+Click the toolbar icon to turn Exact Paste off (badge shows **OFF**). Same toggle: Alt+Shift+V. Shift+paste is always a normal paste.
+
+The popup has a **vault**: a free-form note (LinkedIn and a URL, email, whatever you type). If the clipboard does not match this box, the vault does. A copied match always wins.
 
 From a checkout, the same path is `npm start`. If `TYPESAFE_API_KEY` is already in the environment or `.env`, it does not ask again.
 
@@ -47,8 +49,9 @@ Open http://127.0.0.1:4173. Copy the source on the left, paste into one field at
 | Email / phone / URL and the chunk has exactly one | That value, on-device |
 | First / last / full name and exactly one person in the chunk | Split in code, on-device |
 | Company, city, title, summary, or two people in the chunk | Jev picks a substring, then a second check. Fail → whole chunk |
-| Comment, tweet, search, password, unlabeled box | Chrome’s normal paste |
-| No key, timeout, error | Whole chunk |
+| Clipboard has no match, vault does | Vault value |
+| Comment, tweet, search, password | Chrome’s normal paste |
+| Timeout, error, or nothing matches | Whole chunk, or leave a filled field alone |
 
 Jev never writes text. Code copies a slice of what you copied. Model: `jev-1.13.0`.
 

@@ -1,30 +1,45 @@
 const key = document.querySelector<HTMLInputElement>("#key");
+const vault = document.querySelector<HTMLTextAreaElement>("#vault");
 const enabled = document.querySelector<HTMLInputElement>("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
 const note = document.querySelector("#status");
 const save = document.querySelector("#save");
-if (!key || !enabled || !enabledLabel || !note || !save) throw new Error("options markup");
+if (!key || !vault || !enabled || !enabledLabel || !note || !save) throw new Error("options markup");
+const onToggle = enabled;
+const onLabel = enabledLabel;
+const vaultBox = vault;
+const keyBox = key;
+const statusBox = note;
 
 function paintEnabled(on: boolean): void {
-  enabled.checked = on;
-  enabledLabel.textContent = on ? "On" : "Off";
+  onToggle.checked = on;
+  onLabel.textContent = on ? "On" : "Off";
 }
 
-chrome.storage.local.get(["apiKey", "enabled"]).then((stored) => {
-  if (typeof stored.apiKey === "string") key.value = stored.apiKey;
+chrome.storage.local.get(["apiKey", "enabled", "vault"]).then((stored) => {
+  if (typeof stored.apiKey === "string") keyBox.value = stored.apiKey;
+  if (typeof stored.vault === "string") vaultBox.value = stored.vault;
   paintEnabled(stored.enabled !== false);
 });
 
-enabled.addEventListener("change", () => {
-  const on = enabled.checked;
+let vaultTimer = 0;
+vaultBox.addEventListener("input", () => {
+  window.clearTimeout(vaultTimer);
+  vaultTimer = window.setTimeout(() => {
+    void chrome.storage.local.set({ vault: vaultBox.value });
+  }, 250);
+});
+
+onToggle.addEventListener("change", () => {
+  const on = onToggle.checked;
   paintEnabled(on);
   void chrome.storage.local.set({ enabled: on });
 });
 
 save.addEventListener("click", () => {
-  void chrome.storage.local.set({ apiKey: key.value.trim() }).then(() => {
-    note.textContent = key.value.trim()
-      ? "Saved. Reload pages that were already open."
-      : "Cleared. Using the built-in key if you built with .env.";
-  });
+  void chrome.storage.local
+    .set({ apiKey: keyBox.value.trim(), vault: vaultBox.value })
+    .then(() => {
+      statusBox.textContent = "Saved.";
+    });
 });

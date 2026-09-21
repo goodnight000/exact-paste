@@ -9,6 +9,8 @@ On `paste` in Chrome:
 1. If the focused control is not a form slot, do not touch the event. Chrome pastes as usual.
 2. If it is a form slot, cancel the default paste and write **this field only**.
 3. If a slice is found, replace this field with that substring.
+
+A **vault** is a free-form note in the toolbar popup (labels and values the user types). On paste, only a clipboard **slice** counts as a copy win. If the clipboard does not match this field, a vault slice is used. Vault values must appear verbatim in the note.
 4. If anything is uncertain, do **not** wipe a value that is already in the field. Empty fields get the whole clipboard (same as a normal paste). Shift+paste always uses Chrome’s paste.
 
 Wrong is worse than dumb. Dumb is leaving the field or pasting the whole chunk, not inventing text.
