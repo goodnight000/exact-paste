@@ -1,9 +1,9 @@
 import { amounts, dueDates, invoiceNumbers, orgNames } from "./business";
-import { EMAIL_RE, PHONE_RE, URL_RE, BARE_URL_RE, uniqueMatches } from "./gates";
+import { EMAIL_RE, PHONE_RE, uniqueMatches, uniqueUrls } from "./gates";
+import { templateCandidates } from "./template";
 import type { Candidate } from "./types";
 
 const NAME_RE = /\b[A-Z][a-z]+(?:[.'-][A-Z]?[a-z]+)*(?:\s+[A-Z][a-z]+(?:[.'-][A-Z]?[a-z]+)*){0,3}\b/g;
-const LABEL_LINE_RE = /^[^\n:]{1,40}:\s*(\S[^\n]*)$/gm;
 
 function add(
   out: Candidate[],
@@ -28,20 +28,22 @@ function add(
 export function candidates(clipboard: string): Candidate[] {
   const out: Candidate[] = [];
   const seen = new Set<string>();
-  const source = clipboard.length > 12_000 ? clipboard.slice(0, 12_000) : clipboard;
+  const source = clipboard;
+
+  for (const candidate of templateCandidates(source)) {
+    if (!seen.has(candidate.text)) {
+      seen.add(candidate.text);
+      out.push(candidate);
+    }
+  }
 
   for (const email of uniqueMatches(source, EMAIL_RE)) add(out, seen, source, email, "e");
-  for (const url of uniqueMatches(source, URL_RE)) add(out, seen, source, url, "u");
-  for (const url of uniqueMatches(source, BARE_URL_RE)) add(out, seen, source, url, "b");
+  for (const url of uniqueUrls(source)) add(out, seen, source, url, "u");
   for (const phone of uniqueMatches(source, PHONE_RE)) add(out, seen, source, phone, "p");
   for (const id of invoiceNumbers(source)) add(out, seen, source, id, "i");
   for (const org of orgNames(source)) add(out, seen, source, org, "o");
   for (const amount of amounts(source)) add(out, seen, source, amount, "a");
   for (const date of dueDates(source)) add(out, seen, source, date, "d");
-
-  for (const match of source.matchAll(LABEL_LINE_RE)) {
-    add(out, seen, source, match[1] ?? "", "l");
-  }
 
   for (const line of source.split(/\r?\n/)) {
     const trimmed = line.trim();

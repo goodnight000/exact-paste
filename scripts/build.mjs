@@ -60,7 +60,8 @@ function png(size, rgb) {
 }
 
 const env = loadEnv();
-const key = (env.TYPESAFE_API_KEY ?? "").trim();
+const key = process.argv.includes("--with-key") && !process.argv.includes("--keyless")
+  ? (env.TYPESAFE_API_KEY ?? "").trim() : "";
 await mkdir(join(dist, "icons"), { recursive: true });
 await writeFile(
   join(dist, "baked.js"),
@@ -122,5 +123,5 @@ for (const size of [16, 32, 48, 128]) {
 if (key) {
   console.log("Exact Paste: built with TYPESAFE_API_KEY from .env / environment.");
 } else {
-  console.log("Exact Paste: built without a key. Add TYPESAFE_API_KEY to .env and rebuild, or paste it in the extension popup.");
+  console.log("Exact Paste: built without a key. Local matching is ready; optionally add a TypeSafe key in Settings.");
 }

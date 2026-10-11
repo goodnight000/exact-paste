@@ -1,7 +1,7 @@
 {
   "name": "exact-paste",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Paste the exact value a Chrome form field wants, or the whole copied text.",
   "repository": {
@@ -14,7 +14,7 @@
   "homepage": "https://github.com/goodnight000/exact-paste",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.15.0"
   },
   "bin": {
     "exact-paste": "./bin/exact-paste.mjs"
@@ -23,20 +23,24 @@
     "start": "node bin/exact-paste.mjs",
     "setup": "node bin/exact-paste.mjs",
     "build": "node scripts/build.mjs",
-    "demo": "python3 -m http.server 4173 --directory demo",
+    "demo": "node scripts/demo.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "eval": "node scripts/run-eval.mjs",
-    "open": "node scripts/open-chrome.mjs"
+    "open": "node scripts/open-chrome.mjs",
+    "package": "node scripts/package.mjs",
+    "verify": "node scripts/verify.mjs",
+    "record-demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {
-    "puppeteer-core": "^24.15.0"
+    "puppeteer-core": "^25.13.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
+    "@types/node": "^22.20.5",
     "esbuild": "^0.25.9",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   }
 }

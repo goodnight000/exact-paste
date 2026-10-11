@@ -1,6 +1,5 @@
-import { deepActiveElement, describeField, isSlot } from "../src/field";
-import { applyPaste } from "../src/apply";
-import type { Decision, FieldInfo } from "../src/types";
+import { installPaste } from "../src/paste";
+import type { Decision } from "../src/types";
 
 let armed = false;
 
@@ -25,6 +24,7 @@ async function refreshArmed(): Promise<boolean> {
 
 void refreshArmed();
 chrome.storage.onChanged.addListener(() => {
+  controller.cancelPending();
   void refreshArmed();
 });
 
@@ -41,40 +41,13 @@ function toast(mode: Decision["mode"], value: string): void {
   window.setTimeout(() => el.remove(), 1200);
 }
 
-document.addEventListener(
-  "paste",
-  (event) => {
-    if ("shiftKey" in event && Boolean((event as { shiftKey?: boolean }).shiftKey)) return;
-    const target = deepActiveElement();
-    if (!isSlot(target)) return;
-    if (!armed) {
-      void refreshArmed();
-      return;
+const controller = installPaste({
+  enabled: () => armed,
+  decide: async (text, field) => chrome.runtime.sendMessage({ type: "decide", text, field }) as Promise<Decision>,
+  applied: (decision, el, written) => {
+    if (written) toast(decision.mode, el.value);
+    else if (decision.mode === "slice" && el.maxLength >= 0 && decision.value.length > el.maxLength) {
+      toast("slice", "Too long for this field. Nothing pasted.");
     }
-    const text = event.clipboardData?.getData("text/plain") ?? "";
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const field: FieldInfo = describeField(target);
-    const el = target;
-    void (async () => {
-      let decision: Decision = { value: text, mode: "whole", reason: "fallback" };
-      try {
-        await refreshArmed();
-        if (armed) {
-          const result = (await chrome.runtime.sendMessage({
-            type: "decide",
-            text,
-            field,
-          })) as Decision | undefined;
-          if (result && typeof result.value === "string") decision = result;
-        }
-      } catch {
-        decision = { value: text, mode: "whole", reason: "worker" };
-      }
-      if (!el.isConnected) return;
-      applyPaste(el, decision, text);
-      toast(decision.mode, el.value);
-    })();
   },
-  { capture: true },
-);
+});

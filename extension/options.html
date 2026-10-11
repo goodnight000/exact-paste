@@ -2,102 +2,208 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Exact Paste</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exact Paste settings</title>
     <style>
       :root {
         color-scheme: light dark;
+        --font: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+        --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        /* type scale 12 / 13 / 14 / 16 / 20; spacing 4 / 8 / 12 / 16 / 24 / 32 */
+        --bg: #f6f6f4;
+        --surface: #ffffff;
+        --ink: #1d1f1e;
+        --dim: #5d625f;
+        --faint: #8a8f8c;
+        --line: #e2e3e0;
+        --field: #ffffff;
+        --field-line: #cfd2ce;
+        --accent: #2b6a58;
+        --accent-ink: #ffffff;
+        --ok: #2b6a58;
+        --bad: #a3352b;
+        --focus: #2b6a58;
+        --r: 8px;
       }
-      body {
-        margin: 0;
-        font: 14px/1.45 ui-sans-serif, system-ui, sans-serif;
-        padding: 20px 22px 24px;
-        min-width: 320px;
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #161817;
+          --surface: #1e2120;
+          --ink: #e0e2e0;
+          --dim: #a1a7a3;
+          --faint: #7a807c;
+          --line: #2d312f;
+          --field: #242826;
+          --field-line: #3a3f3c;
+          --accent: #86b8a6;
+          --accent-ink: #102019;
+          --ok: #86b8a6;
+          --bad: #e39a90;
+          --focus: #86b8a6;
+        }
       }
-      h1 {
-        font-size: 16px;
-        font-weight: 650;
-        margin: 0 0 8px;
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--bg); color: var(--ink); }
+      body { font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
+      button, input, textarea { font: inherit; color: inherit; }
+      :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+      .page { display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; }
+      .top { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--surface); }
+      .top h1 { margin: 0; font-size: 16px; font-weight: 600; }
+      .top .spacer { flex: 1; }
+      .top a { color: var(--dim); font-size: 13px; text-decoration: none; }
+      .top a:hover { color: var(--ink); text-decoration: underline; }
+
+      .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--dim); }
+      .switch input { appearance: none; margin: 0; width: 34px; height: 20px; border-radius: 10px; background: var(--field-line); position: relative; cursor: pointer; transition: background 160ms ease-out; }
+      .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 8px; background: var(--surface); transition: transform 160ms ease-out; }
+      .switch input:checked { background: var(--accent); }
+      .switch input:checked::after { transform: translateX(14px); }
+      .switch span { min-width: 2ch; }
+
+      main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; width: min(1040px, 100%); margin: 0 auto; padding: 24px 24px 32px; align-items: start; }
+      section + section { margin-top: 24px; }
+      h2 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+      .lede { margin: 0 0 12px; font-size: 13px; color: var(--dim); }
+      code { font: 12px var(--mono); }
+
+      .rows { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+      .rows li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 32px; gap: 8px; align-items: start; padding: 8px; }
+      .rows li + li { border-top: 1px solid var(--line); }
+      .rows .empty { display: block; padding: 16px; color: var(--faint); font-size: 13px; }
+      .rows input, .rows textarea, .notes textarea, .key input {
+        width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--field);
       }
-      p {
-        margin: 0 0 14px;
-        color: CanvasText;
-        opacity: 0.8;
+      .rows .name { border-color: transparent; background: transparent; color: var(--dim); font-size: 13px; }
+      .rows .name:hover, .rows .name:focus { border-color: var(--field-line); background: var(--field); color: var(--ink); }
+      .rows textarea { resize: none; field-sizing: content; max-height: 220px; line-height: 1.45; }
+      .rows .name[aria-invalid="true"], .rows .value[aria-invalid="true"] { border-color: var(--bad); }
+      .remove { width: 32px; height: 34px; border: 0; border-radius: 6px; background: transparent; color: var(--faint); cursor: pointer; font-size: 18px; line-height: 1; }
+      .remove:hover { background: var(--line); color: var(--ink); }
+
+      .add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .add button { height: 30px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--surface); color: var(--dim); font-size: 13px; cursor: pointer; }
+      .add button:hover { color: var(--ink); border-color: var(--dim); }
+      .add button[hidden] { display: none; }
+
+      .notes textarea { min-height: 220px; resize: vertical; font: 13px/1.5 var(--mono); }
+
+      .rail { position: sticky; top: 24px; display: grid; gap: 24px; }
+      .rail section + section { margin-top: 0; }
+      .key { display: flex; gap: 8px; }
+      .key input { font: 13px var(--mono); }
+      .key button { flex: none; height: 34px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--surface); color: var(--dim); cursor: pointer; font-size: 13px; }
+      .facts { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--dim); }
+      .facts li { padding: 8px 0; border-top: 1px solid var(--line); }
+      .facts b { color: var(--ink); font-weight: 600; }
+      .jev-state { margin: 8px 0 0; font-size: 13px; color: var(--dim); min-height: 1.45em; }
+
+      details summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+      details pre { margin: 8px 0 0; max-height: 260px; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; color: var(--dim); }
+
+      .bar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--surface); }
+      .bar .status { flex: 1; min-height: 1.45em; font-size: 13px; color: var(--dim); }
+      .bar .status[data-tone="ok"] { color: var(--ok); }
+      .bar .status[data-tone="bad"] { color: var(--bad); }
+      .bar button { height: 34px; padding: 0 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+      #discard { border: 1px solid var(--field-line); background: transparent; color: var(--dim); }
+      #discard[hidden] { display: none; }
+      #save { min-width: 84px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+      #save:disabled { opacity: 0.55; cursor: default; }
+
+      /* Popup and narrow windows: one column, rail sections follow the work. */
+      @media (max-width: 720px) {
+        .top { padding: 12px 16px; }
+        main { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 16px; }
+        .rail { position: static; }
+        .rows li { grid-template-columns: 6.5rem minmax(0, 1fr) 28px; gap: 4px; padding: 6px; }
+        .remove { width: 28px; }
+        .notes textarea { min-height: 160px; }
+        .bar { padding: 10px 16px; }
       }
-      label {
-        display: block;
-        font-size: 12px;
-        margin-bottom: 6px;
-      }
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        margin: 0 0 14px;
-        cursor: pointer;
-      }
-      .toggle input {
-        width: auto;
-        margin: 0;
-        accent-color: CanvasText;
-      }
-      input, textarea {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px 10px;
-        font: inherit;
-        border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
-        border-radius: 6px;
-        background: Canvas;
-        color: CanvasText;
-      }
-      textarea {
-        min-height: 140px;
-        resize: vertical;
-        font: 13px/1.45 ui-monospace, Menlo, monospace;
-      }
-      button {
-        margin-top: 12px;
-        padding: 7px 12px;
-        font: inherit;
-        border: 0;
-        border-radius: 6px;
-        background: CanvasText;
-        color: Canvas;
-        cursor: pointer;
-      }
-      #status {
-        margin-top: 10px;
-        font-size: 12px;
-        min-height: 1.2em;
-      }
+      body.popup { width: 400px; }
+      body.popup .page { min-height: 0; height: 580px; }
+      body.popup main { overflow: auto; }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
   </head>
   <body>
-    <h1>Exact Paste</h1>
-    <label class="toggle">
-      <input id="enabled" type="checkbox" checked />
-      <span id="enabled-label">On</span>
-    </label>
-    <p>
-      Paste in a Chrome form field. A matching value from what you copied goes in that box. If the
-      copy does not match this box, the vault is used. Shift+paste is always a normal paste.
-    </p>
-    <label for="vault">Vault</label>
-    <textarea
-      id="vault"
-      spellcheck="false"
-      placeholder="LinkedIn
-https://www.linkedin.com/in/you
+    <div class="page">
+      <header class="top">
+        <h1>Exact Paste</h1>
+        <label class="switch">
+          <input id="enabled" type="checkbox" role="switch" checked />
+          <span id="enabled-label">On</span>
+        </label>
+        <span class="spacer"></span>
+        <a id="full" href="options.html" target="_blank" hidden>Open full page</a>
+      </header>
 
-Email
-you@studio.com"
-    ></textarea>
-    <label for="key">TypeSafe API key</label>
-    <input id="key" type="password" autocomplete="off" spellcheck="false" />
-    <button id="save" type="button">Save</button>
-    <div id="status"></div>
+      <main inert>
+        <div class="work">
+          <section aria-labelledby="fields-h">
+            <h2 id="fields-h">Your details</h2>
+            <p class="lede">Used when the copied text has no clear match for the field you paste into.</p>
+            <ul id="rows" class="rows"></ul>
+            <div class="add" role="group" aria-label="Add a field">
+              <button type="button" data-kind="name">+ Name</button>
+              <button type="button" data-kind="email">+ Email</button>
+              <button type="button" data-kind="phone">+ Phone</button>
+              <button type="button" data-kind="linkedin">+ LinkedIn</button>
+              <button type="button" data-kind="github">+ GitHub</button>
+              <button type="button" data-kind="website">+ Website</button>
+              <button type="button" data-kind="custom">+ Custom field</button>
+            </div>
+          </section>
+
+          <section class="notes" aria-labelledby="notes-h">
+            <h2 id="notes-h"><label for="notes">Long answers and notes</label></h2>
+            <p class="lede" id="notes-d">Put each question on its own line with the answer below it, or use <code>Label: value</code>.</p>
+            <textarea
+              id="notes"
+              spellcheck="true"
+              aria-describedby="notes-d"
+              placeholder="What are you building?
+A ledger that reconciles itself.
+
+Why did you pick this idea?
+We ran payments at a marketplace for four years."
+            ></textarea>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section aria-labelledby="jev-h">
+            <h2 id="jev-h"><label for="key">TypeSafe API key</label></h2>
+            <p class="lede" id="key-d">Optional. Matching by label and platform runs on this device without a key.</p>
+            <div class="key">
+              <input id="key" type="password" autocomplete="off" spellcheck="false" aria-describedby="key-d jev-state" placeholder="Not set" />
+              <button id="reveal" type="button" aria-pressed="false">Show</button>
+            </div>
+            <p class="jev-state" id="jev-state"></p>
+            <ul class="facts">
+              <li><b>On this device:</b> label, header, and link matching against your clipboard and the details above.</li>
+              <li><b>With a key:</b> when that is unsure, the copied text (or your saved details, on fallback) and the field's label and nearby page text go to api.typesafe.ai for Jev to pick a value.</li>
+            </ul>
+          </section>
+
+          <section>
+            <details>
+              <summary>Saved text</summary>
+              <pre id="preview" aria-label="Text Exact Paste reads when the clipboard has no match"></pre>
+            </details>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="bar">
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <button id="discard" type="button" hidden>Discard</button>
+        <button id="save" type="button" disabled>Save</button>
+      </footer>
+    </div>
     <script src="options.js"></script>
   </body>
 </html>
