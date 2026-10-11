@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Foundry · Winter batch application</title>
+    <style>
+      :root { --bg:#eef0f2; --paper:#fff; --ink:#1b1f24; --dim:#56606b; --faint:#848d97; --line:#dde1e5; --field:#fff; --field-line:#c6ccd3; --accent:#1d5fb8; --doc:#1c2026; --doc-ink:#dde1e6; --doc-dim:#8e98a3; --doc-line:#333a42; }
+      * { box-sizing: border-box; }
+      html, body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+      .bar { position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:20px; height:52px; padding:0 24px; background:var(--paper); border-bottom:1px solid var(--line); }
+      .bar strong { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; }
+      .bar strong i { width:18px; height:18px; background:var(--accent); border-radius:3px; }
+      .bar a { color:var(--dim); text-decoration:none; font-size:13px; }
+      .bar a:hover { color:var(--ink); }
+      .spacer { flex:1; }
+      .bar em { font-style:normal; color:var(--faint); font-size:13px; }
+      .work { display:grid; grid-template-columns:minmax(320px, 40%) 1fr; min-height:calc(100vh - 52px); }
+
+      .doc { position:sticky; top:52px; align-self:start; height:calc(100vh - 52px); display:grid; grid-template-rows:auto 1fr; background:var(--doc); color:var(--doc-ink); }
+      .doc header { display:flex; align-items:center; gap:12px; padding:16px 24px; border-bottom:1px solid var(--doc-line); }
+      .doc header div { flex:1; }
+      .doc h1 { margin:0; font-size:14px; font-weight:600; }
+      .doc header p { margin:2px 0 0; font-size:12px; color:var(--doc-dim); }
+      .copy { height:32px; padding:0 14px; border:1px solid var(--doc-line); border-radius:6px; background:#e9edf1; color:#1b1f24; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; min-width:96px; }
+      .copy:focus-visible, .go:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+      .doc pre { margin:0; overflow:auto; padding:24px; font:13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; white-space:pre-wrap; }
+
+      .form { padding:32px 40px 64px; }
+      .form > header { max-width:640px; margin:0 0 24px; }
+      .form h2 { margin:0 0 4px; font-size:22px; font-weight:600; letter-spacing:-0.01em; }
+      .form > header p { margin:0; color:var(--dim); }
+      form { max-width:640px; }
+      fieldset { margin:0 0 24px; padding:0; border:0; }
+      legend { padding:0; margin:0 0 12px; font-size:13px; font-weight:600; color:var(--dim); }
+      .group { background:var(--paper); border:1px solid var(--line); border-radius:8px; }
+      .q { display:block; padding:16px 20px; }
+      .group > * + * { border-top:1px solid var(--line); }
+      .q > span { display:block; margin:0 0 8px; font-weight:600; }
+      .q small { display:block; margin:-4px 0 8px; color:var(--faint); font-size:13px; }
+      .pair { display:grid; grid-template-columns:1fr 1fr; }
+      .pair .q + .q { border-top:0; border-left:1px solid var(--line); }
+      input, textarea { width:100%; padding:8px 11px; border:1px solid var(--field-line); border-radius:6px; background:var(--field); color:var(--ink); font:inherit; }
+      input { height:40px; }
+      textarea { min-height:132px; resize:vertical; line-height:1.55; }
+      .go { height:42px; padding:0 20px; border:0; border-radius:6px; background:var(--accent); color:#fff; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; }
+
+      @media (max-width: 860px) {
+        .work { grid-template-columns:1fr; }
+        .doc { position:static; height:auto; max-height:420px; }
+        .form { padding:24px 20px 48px; }
+        .pair { grid-template-columns:1fr; }
+        .pair .q + .q { border-left:0; border-top:1px solid var(--line); }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <strong><i aria-hidden="true"></i>Foundry</strong>
+      <a href="index.html">Scenes</a>
+      <span class="spacer"></span>
+      <em id="ep-status"></em>
+    </header>
+    <div class="work">
+      <section class="doc" aria-labelledby="doc-h">
+        <header>
+          <div>
+            <h1 id="doc-h">application-draft.md</h1>
+            <p>Copy once, paste into each box. Name, phone, and GitHub are not in here; they come from your saved details.</p>
+          </div>
+          <button class="copy" id="copy" type="button">Copy all</button>
+        </header>
+        <pre id="source">## About your company
+Tallyhand turns the receipts a field crew already photographs into job costs a contractor can bill against the same day.
+
+## What are you building?
+A phone app for crews and a web ledger for the office. A crew lead snaps a receipt or a supplier invoice. We read the line items, match each one to the open job and cost code, and flag anything that does not fit the estimate before the office closes the week.
+
+Today the office manager does this on Fridays from a shoebox of paper. On our pilot jobs she now spends about forty minutes a week on it instead of six hours, and two of our three pilot contractors caught overbilled lumber orders in the first month.
+
+Next we are adding change orders, so a crew lead can price extra work on site and the client signs it on the same screen.
+
+## Why did you pick this idea?
+I ran estimating for my family's remodeling company for six years. We lost money on jobs we thought were profitable because costs showed up three weeks late. Priya built the receipt pipeline for expense reports at Ramp and saw the same lag from the other side. We have been building this together nights and weekends since March.
+
+## How far along are you?
+Three paying contractors, 41 active jobs, $2,100 MRR.
+
+LinkedIn URL: https://www.linkedin.com/in/maya-oduya
+Email: maya@tallyhand.co
+Company website: https://tallyhand.co</pre>
+      </section>
+
+      <section class="form" aria-labelledby="form-h">
+        <header>
+          <h2 id="form-h">Winter batch application</h2>
+          <p>Tell us about the founders and the company.</p>
+        </header>
+        <form action="#" onsubmit="return false">
+          <fieldset>
+            <legend>Founder</legend>
+            <div class="group">
+              <div class="pair">
+                <label class="q"><span>Full name</span><input name="name" type="text" autocomplete="name" /></label>
+                <label class="q"><span>Email</span><input name="email" type="email" autocomplete="email" /></label>
+              </div>
+              <div class="pair">
+                <label class="q"><span>Phone</span><input name="phone" type="tel" autocomplete="tel" /></label>
+                <label class="q"><span>LinkedIn URL</span><input name="linkedin" type="url" /></label>
+              </div>
+              <label class="q"><span>GitHub</span><input name="github" type="url" /></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Company</legend>
+            <div class="group">
+              <label class="q"><span>Company website</span><input name="website" type="url" /></label>
+              <label class="q"><span id="about-q">About your company</span><small>One sentence.</small><textarea name="about" aria-labelledby="about-q" rows="2" style="min-height:72px"></textarea></label>
+              <label class="q"><span>What are you building?</span><textarea name="building"></textarea></label>
+              <label class="q"><span>Why did you pick this idea?</span><textarea name="why"></textarea></label>
+            </div>
+          </fieldset>
+
+          <button class="go" type="button">Submit application</button>
+        </form>
+      </section>
+    </div>
+    <script>
+      const copy = document.getElementById("copy");
+      const source = document.getElementById("source");
+      copy.addEventListener("click", async () => {
+        const text = source.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          // Clipboard API blocked (insecure origin or no permission): fall back to a selected textarea.
+          const box = document.createElement("textarea");
+          box.value = text;
+          box.style.position = "fixed";
+          box.style.opacity = "0";
+          document.body.append(box);
+          box.select();
+          document.execCommand("copy");
+          box.remove();
+        }
+        copy.textContent = "Copied";
+        setTimeout(() => { copy.textContent = "Copy all"; }, 1600);
+      });
+    </script>
+    <script src="status.js"></script>
+  </body>
+</html>

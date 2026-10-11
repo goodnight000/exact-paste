@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { decide } from "../src/decide";
+import { field } from "../eval/fields";
 import type { FieldInfo, JevAnswers, JevAsk } from "../src/types";
 
 const resume = `Marcus Lowe
@@ -126,5 +127,122 @@ describe("decide", () => {
     });
     const result = await decide(resume, nameField, ask);
     expect(result.mode).toBe("whole");
+  });
+
+  it("extracts complete long template answers locally from the full clipboard", async () => {
+    const answer = "Our thesis: make time useful.\r\n".repeat(600).trimEnd();
+    const clipboard = "Old notes\n".repeat(2000) + `\r\n# What are you building?\r\n${answer}\r\n\r\n# Who needs it most?\r\nClinics.`;
+    const ask = askWith({});
+    expect(await decide(clipboard, field("What are you building?", "textarea"), ask)).toEqual({ value: answer, mode: "slice", reason: "template-header" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("handles an email label directly adjacent to its value", async () => {
+    const ask = askWith({});
+    expect(await decide("Email:me@example.com", emailField, ask)).toMatchObject({ value: "me@example.com", mode: "slice" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("does not choose an unrelated or spoofed URL for a platform field", async () => {
+    const ask = askWith({});
+    for (const clipboard of ["https://github.com/me", "Website: https://company.example", "https://linkedin.com.evil.example/in/me", "https://linkedin.com@evil.example/in/me"]) {
+      const result = await decide(clipboard, field("LinkedIn", "url"), ask);
+      expect(result.mode, clipboard).toBe("whole");
+      expect(result.value).toBe(clipboard);
+    }
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["Personal email: me@example.com", field("Work email", "email")],
+    ["Company website: https://company.example", field("Personal website", "url")],
+    ["Home phone: +1 415 555 0100", field("Work phone", "tel")],
+  ])("does not bypass incompatible explicit headers with a lone scalar: %s", async (clipboard, target) => {
+    const ask = askWith({});
+    expect(await decide(clipboard, target, ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "template-mismatch" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("chooses the sole relevant platform URL among several other URLs locally", async () => {
+    const ask = askWith({});
+    const clipboard = "https://github.com/me\nhttps://www.linkedin.com/in/me\nhttps://me.example";
+    expect(await decide(clipboard, field("LinkedIn", "url"), ask)).toEqual({ value: "https://www.linkedin.com/in/me", mode: "slice", reason: "one-platform-url" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("rejects two possible platform URLs rather than asking for a guess", async () => {
+    const ask = askWith({});
+    const clipboard = "https://linkedin.com/in/first\nhttps://linkedin.com/in/second";
+    expect(await decide(clipboard, field("LinkedIn", "url"), ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "ambiguous-platform-urls" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("keeps platform URLs with shared prefixes ambiguous", async () => {
+    const clipboard = "Alice: https://linkedin.com/in/alice\nAlice Two: https://linkedin.com/in/alice2";
+    const ask = askWith({});
+    expect(await decide(clipboard, field("LinkedIn", "url"), ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "ambiguous-platform-urls" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("rejects conflicting headers before any heuristic or model can choose one", async () => {
+    const ask = askWith({});
+    const clipboard = "Email: first@example.com\nEmail address: second@example.com";
+    expect(await decide(clipboard, emailField, ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "ambiguous-template-conflicting-headers" });
+    const names = "Name: Jane Doe\nName: John Smith";
+    expect(await decide(names, field("First name", "text", { autocomplete: "given-name" }), ask)).toMatchObject({ value: names, mode: "whole", reason: "ambiguous-template-conflicting-headers" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("never submits a truncated ambiguous source to Jev", async () => {
+    const ask = askWith({});
+    const clipboard = "ambiguous notes ".repeat(1200) + "\nMarcus Lowe\nSkydive";
+    expect(await decide(clipboard, nameField, ask)).toEqual({ value: clipboard, mode: "whole", reason: "source-too-large" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("keeps labelled secrets away from Jev", async () => {
+    const ask = askWith({});
+    const clipboard = 'api_key: "a-very-long-sensitive-value"\nuncertain prose';
+    expect(await decide(clipboard, field("Explain your idea", "textarea"), ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "secret" });
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it.each([NaN, Infinity, -0.1, 1.1])("rejects a non-probability noul value %s", async (noul) => {
+    const ask = askWith({ wants_extracted: { type: "noul", noul } });
+    const clipboard = "Marcus Lowe\nSkydive\n";
+    expect(await decide(clipboard, nameField, ask)).toMatchObject({ value: clipboard, mode: "whole", reason: "not-extracted" });
+  });
+
+  it.each([
+    { confidence: NaN, probabilities: { n0: 1 } },
+    { confidence: Infinity, probabilities: { n0: 1 } },
+    { confidence: 2, probabilities: { n0: 1 } },
+    { confidence: 1, probabilities: undefined },
+    { confidence: 1, probabilities: null },
+    { confidence: 1, probabilities: { n0: NaN } },
+    { confidence: 1, probabilities: { n0: 2 } },
+    { confidence: 1, probabilities: { n0: 1, none: -1 } },
+  ])("handles malformed choice data without throwing: %j", async (data) => {
+    const ask = askWith({
+      wants_extracted: { type: "noul", noul: 0.99 },
+      pick: { type: "choice", choice: "n0", ...data },
+    } as unknown as JevAnswers);
+    const clipboard = "Marcus Lowe\nSkydive\n";
+    await expect(decide(clipboard, nameField, ask)).resolves.toMatchObject({ value: clipboard, mode: "whole", reason: "no-pick" });
+  });
+
+  it("retains the second model verification and rejects an invalid verifier score", async () => {
+    const clipboard = "Marcus Lowe\nSkydive\n";
+    const ask = vi.fn<JevAsk>(async (_state, questions): Promise<JevAnswers> => {
+      if ("ok" in questions) return { ok: { type: "noul", noul: 2 } };
+      const criteria = (questions.pick as { criteria: Record<string, string> }).criteria;
+      const id = Object.keys(criteria).find((key) => criteria[key] === "Marcus Lowe")!;
+      return {
+        wants_extracted: { type: "noul", noul: 0.99 },
+        pick: { type: "choice", choice: id, probabilities: { [id]: 0.99, whole: 0.01 }, confidence: 0.99 },
+      };
+    });
+    expect(await decide(clipboard, nameField, ask)).toEqual({ value: clipboard, mode: "whole", reason: "verify-fail" });
+    expect(ask).toHaveBeenCalledTimes(2);
   });
 });

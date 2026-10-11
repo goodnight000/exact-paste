@@ -6,10 +6,10 @@ export function insertValue(el: HTMLInputElement | HTMLTextAreaElement, value: s
   el.dispatchEvent(
     new InputEvent("input", {
       bubbles: true,
-      cancelable: true,
+      composed: true,
       inputType: "insertFromPaste",
       data: value,
     }),
   );
-  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
 }

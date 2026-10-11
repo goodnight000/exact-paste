@@ -1,13 +1,13 @@
 import { createAsk } from "../src/jev";
 import { resolvePaste } from "../src/resolve";
-import { isEnabled, vaultText } from "../src/settings";
+import { isEnabled } from "../src/settings";
+import { savedSource } from "../src/profile";
 import { BAKED_API_KEY } from "./baked";
-import type { FieldInfo } from "../src/types";
+import type { FieldInfo, JevAsk } from "../src/types";
 
 async function apiKey(): Promise<string> {
   const stored = await chrome.storage.local.get("apiKey");
-  const fromStore = typeof stored.apiKey === "string" ? stored.apiKey.trim() : "";
-  return fromStore || BAKED_API_KEY.trim();
+  return typeof stored.apiKey === "string" ? stored.apiKey.trim() : BAKED_API_KEY.trim();
 }
 
 async function enabled(): Promise<boolean> {
@@ -40,28 +40,47 @@ chrome.commands.onCommand.addListener((command) => {
   })();
 });
 
+function validField(raw: unknown): raw is FieldInfo {
+  if (!raw || typeof raw !== "object") return false;
+  const field = raw as FieldInfo;
+  return ["email", "url", "tel", "text", "textarea"].includes(field.kind) &&
+    ["label", "type", "name", "id", "autocomplete", "placeholder", "tag"].every((key) =>
+      typeof field[key as keyof FieldInfo] === "string") &&
+    Array.isArray(field.nearby) && field.nearby.every((label) => typeof label === "string");
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, reply) => {
+  const text = typeof message?.text === "string" ? message.text : "";
   void (async () => {
     const key = await apiKey();
     const on = await enabled();
     if (message?.type === "status") {
-      reply({ ready: on, enabled: on });
+      reply({ ready: on, enabled: on, jev: Boolean(key) });
       return;
     }
     if (message?.type !== "decide") {
       reply({ value: "", mode: "whole", reason: "unknown" });
       return;
     }
-    const text = typeof message.text === "string" ? message.text : "";
-    const field = message.field as FieldInfo;
+    const field: unknown = message.field;
+    if (!validField(field)) {
+      reply({ value: text, mode: "whole", reason: "invalid-field" });
+      return;
+    }
     if (!on) {
       reply({ value: text, mode: "whole", reason: "off" });
       return;
     }
-    const stored = await chrome.storage.local.get("vault");
-    const ask = key ? createAsk(key) : null;
-    const decision = await resolvePaste(text, vaultText(stored), field, ask);
+    const source = savedSource(await chrome.storage.local.get(["vault", "profile"]));
+    const started = performance.now();
+    const provider = key ? createAsk(key) : null;
+    const ask: JevAsk | null = provider ? (state, questions, timeoutMs) => {
+      const remaining = 4500 - (performance.now() - started);
+      if (remaining <= 0) return Promise.reject(new Error("Paste deadline"));
+      return provider(state, questions, Math.max(1, Math.min(timeoutMs, Math.floor(remaining))));
+    } : null;
+    const decision = await resolvePaste(text, source.text, field, ask, source.fields);
     reply(decision);
-  })();
+  })().catch(() => reply({ value: text, mode: "whole", reason: "worker" }));
   return true;
 });

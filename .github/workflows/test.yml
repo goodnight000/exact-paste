@@ -16,3 +16,14 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npx tsc --noEmit
+      - run: npm run package
+        env:
+          TYPESAFE_API_KEY: release-must-never-include-this-test-key
+      - run: python3 -c "import zipfile; z=zipfile.ZipFile('release/exact-paste.zip'); assert all(b'release-must-never-include-this-test-key' not in z.read(n) for n in z.namelist()); assert z.testzip() is None; z.extractall('.local/package')"
+      - run: npm run verify
+        env:
+          EXACT_PASTE_EXTENSION_DIR: .local/package/exact-paste
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-paste-extension
+          path: release/exact-paste.zip

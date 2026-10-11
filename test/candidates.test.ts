@@ -32,4 +32,17 @@ describe("candidates", () => {
       expect(resume.slice(item.start, item.end)).toBe(item.text);
     }
   });
+
+  it("keeps multiline header answers as complete candidates with original offsets", () => {
+    const answer = "A useful tool.\r\nThe reason: clinics need it.\r\n\r\nIt saves hours.";
+    const source = `## What are you building?\r\n${answer}\r\n\r\n## Who needs it most?\r\nClinics.`;
+    const found = candidates(source);
+    expect(found.some((candidate) => candidate.text === answer)).toBe(true);
+    for (const candidate of found) expect(source.slice(candidate.start, candidate.end)).toBe(candidate.text);
+  });
+
+  it("does not silently exclude URL candidates after the former prefix limit", () => {
+    const source = "ordinary notes ".repeat(1000) + "\nhttps://late.example/path";
+    expect(candidates(source).some((candidate) => candidate.text === "https://late.example/path")).toBe(true);
+  });
 });

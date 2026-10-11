@@ -30,6 +30,10 @@ REPO="${EXACT_PASTE_REPO:-https://github.com/goodnight000/exact-paste.git}"
 
 DIR="${EXACT_PASTE_DIR:-$HOME/.exact-paste}"
 if [[ -d "$DIR/.git" ]]; then
+  if [[ -n "$(git -C "$DIR" status --porcelain)" ]]; then
+    echo "Existing install has local changes. Preserve them before updating: $DIR" >&2
+    exit 1
+  fi
   git -C "$DIR" pull --ff-only
 else
   git clone "$REPO" "$DIR"

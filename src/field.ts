@@ -1,6 +1,6 @@
 import type { FieldInfo, FieldKind } from "./types";
 
-const SLOT_TYPES = new Set(["text", "email", "tel", "url", "number"]);
+const SLOT_TYPES = new Set(["text", "email", "tel", "url"]);
 const SLOT_AUTOCOMPLETE = new Set([
   "email",
   "username",
@@ -34,7 +34,7 @@ const SECRET_RE =
   /password|passcode|passphrase|one.?time|otp|verification.?code|security.?code|api.?key|secret|token|credit.?card|card.?number|cardholder|cvv|cvc|cc-|ssn|social.?security|pin\b/i;
 
 const COMPOSER_RE =
-  /\b(comment|comments|tweet|search|chat|compose|conversation|reply to)\b/i;
+  /\b(comment|comments|tweet|search|chat|compose|conversation|message|reply to)\b/i;
 
 const SLOT_LABEL_RE =
   /\b(email|e-mail|phone|mobile|tel|name|first name|last name|full name|company|organization|vendor|payee|supplier|title|role|city|location|address|street|zip|postal|country|state|province|website|url|linkedin|twitter|github|summary|bio|cover letter|profile|invoice|amount|total|due|recipient|guest)\b/i;
@@ -44,9 +44,13 @@ const TEXTAREA_SLOT_RE =
 
 function visible(el: Element): boolean {
   if (!(el instanceof HTMLElement)) return false;
-  if (el.hidden || el.closest("[hidden],[inert]")) return false;
-  const style = el.ownerDocument.defaultView?.getComputedStyle(el);
-  if (style && (style.display === "none" || style.visibility === "hidden")) return false;
+  for (let node: Element | null = el; node; ) {
+    if (node.hasAttribute("hidden") || node.hasAttribute("inert")) return false;
+    const style = el.ownerDocument.defaultView?.getComputedStyle(node);
+    if (style && (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse")) return false;
+    const root = node.getRootNode();
+    node = node.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+  }
   return true;
 }
 
@@ -55,22 +59,15 @@ function textOf(el: Element | null | undefined): string {
 }
 
 export function controlLabel(el: HTMLInputElement | HTMLTextAreaElement): string {
+  const root = el.getRootNode() as Document | ShadowRoot;
   const labelled = (el.getAttribute("aria-labelledby") ?? "")
     .split(/\s+/)
-    .map((id) => textOf(el.ownerDocument.getElementById(id)))
+    .map((id) => textOf(root.getElementById(id)))
     .filter(Boolean);
   const labels = "labels" in el ? Array.from(el.labels ?? [], (item) => textOf(item)) : [];
-  return [
-    el.getAttribute("aria-label"),
-    el.placeholder,
-    el.getAttribute("data-placeholder"),
-    ...labelled,
-    ...labels,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
+  // Placeholder instructions should not change a question's matching header.
+  return (labelled.join(" ") || el.getAttribute("aria-label") || labels.join(" ") ||
+    el.placeholder || el.getAttribute("data-placeholder") || "").replace(/\s+/g, " ").trim();
 }
 
 function autocompleteTokens(el: HTMLInputElement | HTMLTextAreaElement): string[] {
@@ -81,7 +78,20 @@ function autocompleteTokens(el: HTMLInputElement | HTMLTextAreaElement): string[
 }
 
 function purpose(el: HTMLInputElement | HTMLTextAreaElement, label: string): string {
-  return [label, el.name, el.id, el.getAttribute("autocomplete")].filter(Boolean).join(" ");
+  return [label, el.name, el.id, el.placeholder, el.getAttribute("data-placeholder"),
+    el.getAttribute("aria-label"), el.getAttribute("autocomplete"),
+    ...Array.from(el.labels ?? [], textOf)].filter(Boolean).join(" ");
+}
+
+function formContainer(el: Element): Element | null {
+  let node: Element | null = el;
+  while (node) {
+    const container = node.closest("form, [role=form], fieldset, dialog");
+    if (container) return container;
+    const root = node.getRootNode();
+    node = root instanceof ShadowRoot ? root.host : null;
+  }
+  return null;
 }
 
 export function fieldKind(el: HTMLInputElement | HTMLTextAreaElement, label: string): FieldKind {
@@ -95,7 +105,7 @@ export function fieldKind(el: HTMLInputElement | HTMLTextAreaElement, label: str
 
 export function isSlot(el: EventTarget | null): el is HTMLInputElement | HTMLTextAreaElement {
   if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return false;
-  if (el.disabled || el.readOnly) return false;
+  if (el.disabled || el.matches(":disabled") || el.readOnly || el.getAttribute("aria-disabled") === "true") return false;
   if (el instanceof HTMLInputElement) {
     const type = (el.type || "text").toLowerCase();
     if (!SLOT_TYPES.has(type)) return false;
@@ -104,27 +114,28 @@ export function isSlot(el: EventTarget | null): el is HTMLInputElement | HTMLTex
   const label = controlLabel(el);
   const blob = purpose(el, label);
   if (SECRET_RE.test(blob)) return false;
+  if (COMPOSER_RE.test(label)) return false;
   if (COMPOSER_RE.test(blob) && !SLOT_LABEL_RE.test(blob)) return false;
 
   const auto = autocompleteTokens(el);
   if (auto.some((token) => token.startsWith("cc-") || token === "csc")) return false;
-  const inForm = Boolean(el.closest("form"));
+  const inForm = Boolean(formContainer(el));
   const hasLabel = label.length > 0;
   const kind = fieldKind(el, label);
 
   if (kind === "email" || kind === "url" || kind === "tel") return true;
   if (auto.some((token) => SLOT_AUTOCOMPLETE.has(token))) return true;
-  if (el.type === "number" && /\b(amount|total|price|qty|quantity)\b/i.test(blob)) return true;
   if (el instanceof HTMLTextAreaElement) {
-    return TEXTAREA_SLOT_RE.test(blob) || (inForm && hasLabel && SLOT_LABEL_RE.test(blob));
+    return TEXTAREA_SLOT_RE.test(blob) || (inForm && hasLabel);
   }
+  if (inForm && hasLabel) return true;
   if (SLOT_LABEL_RE.test(blob)) return true;
   if (hasLabel && SLOT_LABEL_RE.test(label)) return true;
   return false;
 }
 
 export function nearbyLabels(el: HTMLInputElement | HTMLTextAreaElement): string[] {
-  const root = el.closest("form, [role=form], fieldset, dialog") ?? el.parentElement;
+  const root = formContainer(el) ?? el.parentElement;
   if (!root) return [];
   const found: string[] = [];
   const seen = new Set<string>();
@@ -140,7 +151,7 @@ export function nearbyLabels(el: HTMLInputElement | HTMLTextAreaElement): string
     if (!label || seen.has(label)) continue;
     seen.add(label);
     found.push(label);
-    if (found.length >= 12) break;
+    if (found.length >= 100) break;
   }
   return found;
 }
