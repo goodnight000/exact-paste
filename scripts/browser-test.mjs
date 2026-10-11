@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, extname } from 'node:path';
+import { dirname, join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
@@ -31,7 +31,7 @@ export async function launchFixture(fixture = '') {
   let browser;
   try {
     browser = await puppeteer.launch({ executablePath, headless: !process.argv.includes('--headed'),
-      pipe: true, enableExtensions: [join(root, 'dist')],
+      pipe: true, enableExtensions: [resolve(root, process.env.EXACT_PASTE_EXTENSION_DIR ?? 'dist')],
       defaultViewport: { width: 1280, height: 800 },
       args: ['--enable-unsafe-extension-debugging', '--no-first-run', '--no-default-browser-check'] });
     await browser.defaultBrowserContext().overridePermissions(origin, ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
@@ -60,10 +60,19 @@ export async function pasteInto(page, selector, text, expected, { selectAll = fa
   await setClipboard(page, text);
   await page.click(selector);
   if (selectAll) await shortcut(page, 'a');
+  const before = await page.$eval(selector, (el) => {
+    if (typeof el.__pasteTestInputCount !== 'number') {
+      el.__pasteTestInputCount = 0;
+      el.addEventListener('input', () => { el.__pasteTestInputCount++; });
+    }
+    return el.__pasteTestInputCount;
+  });
   await shortcut(page, 'v');
   try {
-    await page.waitForFunction((selector, expected) => document.querySelector(selector).value === expected,
-      { timeout: 6500 }, selector, expected);
+    await page.waitForFunction((selector, expected, before) => {
+      const el = document.querySelector(selector);
+      return el.value === expected && el.__pasteTestInputCount > before;
+    }, { timeout: 6500 }, selector, expected, before);
   } catch (error) {
     const state = await page.$eval(selector, (el) => ({ length: el.value.length, preview: el.value.slice(0, 80),
       active: document.activeElement === el, enabled: document.documentElement.dataset.exactPaste,

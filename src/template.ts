@@ -35,15 +35,22 @@ const ALIASES = [
   ["due date", "due"],
 ] as const;
 
+function stripTrailingHeaderMarks(label: string): string {
+  let end = label.length;
+  while (end > 0 && /[\s:*#]/.test(label[end - 1]!)) end--;
+  return end === label.length ? label : label.slice(0, end);
+}
+
 export function normalizeHeader(label: string): string {
-  return label
+  const heading = stripTrailingHeaderMarks(label
     .normalize("NFKC")
-    .replace(/^\s*(?:#{1,6}\s+|(?:\d+[.)]|Q(?:uestion)?\s*\d+[.):]?)\s+)/i, "")
-    .replace(/[\s:*#]+$/, "")
-    .replace(/(?:\(\s*(?:required|optional)\s*\)|\[\s*(?:required|optional)\s*\])\s*\*?\s*$/i, "")
+    .replace(/^\s*(?:#{1,6}\s+|(?:\d+[.)]|Q(?:uestion)?\s*\d+[.):]?)\s+)/i, ""));
+  return heading
+    .replace(/(?:\(\s*(?:required|optional)\s*\)|\[\s*(?:required|optional)\s*\])$/i, "")
     .replace(/[’']/g, "")
     .replace(/[\p{P}\p{S}]+/gu, " ")
-    .toLocaleLowerCase("en-US")
+    // Default Unicode casing avoids per-line Intl setup on huge documents.
+    .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -122,9 +129,11 @@ function headersOf(source: string, targets: Set<string>, peers: Set<string>): He
     }
     if (fence || !text) continue;
     const blankBefore = index === 0 || !lines[index - 1]!.text.trim();
-    const markdown = line.text.match(/^\s{0,3}(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/);
+    // Closing heading marks are stripped by normalizeHeader. Matching an
+    // optional whitespace tail here rescans giant internal whitespace runs.
+    const markdown = line.text.match(/^\s{0,3}(#{1,6})[ \t]+(.+)$/);
     const numbered = line.text.match(/^\s{0,3}(?:\d{1,4}[.)]|Q(?:uestion)?\s*\d{1,4}[.):]?)[ \t]+(.+)$/i);
-    const bold = line.text.match(/^\s{0,3}(?:\*\*|__)(.+?)(?:\*\*|__)[ \t]*:?[ \t]*$/);
+    const bold = line.text.match(/^\s{0,3}(?:\*\*|__)(.+?)(?:\*\*|__)(?:[ \t]*:)?[ \t]*$/);
     let label = markdown?.[2] ?? numbered?.[1] ?? bold?.[1] ?? text;
     let answerStart = line.next;
     let colon = false;
@@ -146,7 +155,7 @@ function headersOf(source: string, targets: Set<string>, peers: Set<string>): He
     const labelKey = key(label);
     if (!labelKey) continue;
     const known = targets.has(labelKey) || peers.has(labelKey) || canonical.has(labelKey);
-    const question = /\?\s*(?:\*\*|__)?\s*$/.test(label);
+    const question = label.trimEnd().replace(/(?:\*\*|__)$/, "").trimEnd().endsWith("?");
     if (!markdown && !bold && !known && !(numbered && question) && !(colon && question)) continue;
     // Numbered answer lists are ordinary body text, unless the line is a question
     // or exactly names a recognized form label.

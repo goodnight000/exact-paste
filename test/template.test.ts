@@ -52,6 +52,34 @@ describe("headed templates", () => {
     expect(matched(source, "What are you building?").text).toBe(answer);
   });
 
+  it("normalizes Unicode header casing, width, and punctuation without locale setup", () => {
+    const source = "# ＷＨＡＴ’s your idea？\nCafé tools.\n\n# ÉQUIPE ET MARCHÉS\n日本語の回答";
+    expect(matched(source, "What's your idea?").text).toBe("Café tools.");
+    expect(matched(source, "Équipe et marchés").text).toBe("日本語の回答");
+    expect(normalizeHeader("İletişim")).toBe("i\u0307letişim");
+  });
+
+  it("handles giant internal whitespace without rescanning every possible suffix", () => {
+    const gap = " ".repeat(100_000);
+    expect(normalizeHeader(`A${gap}B`)).toBe("a b");
+    expect(normalizeHeader(`Idea (required)${gap}B`)).toBe("idea required b");
+    const source = `A${gap}B\n\n## Email\nyou@example.com`;
+    expect(matched(source, "Email").text).toBe("you@example.com");
+    expect(matched(`# A${gap}B\n\n## Email\nyou@example.com`, "Email").text).toBe("you@example.com");
+    expect(matched(`**A**${gap}B\n\n## Email\nyou@example.com`, "Email").text).toBe("you@example.com");
+    expect(matched(`A?${gap}B\n\n## Email\nyou@example.com`, "Email").text).toBe("you@example.com");
+  });
+
+  it("preserves trailing Markdown and required-decorator normalization", () => {
+    expect(normalizeHeader("## Idea [ optional ] * # : \t")).toBe("idea");
+    expect(normalizeHeader("Idea ( required )\u00a0* : #\u2003")).toBe("idea");
+    expect(normalizeHeader("Idea (required) * " + "#".repeat(100_000))).toBe("idea");
+    expect(matched("## Email ###\nyou@example.com", "Email").text).toBe("you@example.com");
+    expect(matched("**Email__ : \t\nyou@example.com", "Email").text).toBe("you@example.com");
+    const numbered = "1. What are you building? ** \t\nA useful tool.\n\n2. Why this idea? __ \t\nWe needed it.";
+    expect(matched(numbered, "What are you building?").text).toBe("A useful tool.");
+  });
+
   it("does not interpret headings inside a fenced code block", () => {
     const answer = "Our template:\n```markdown\n# Who needs it most?\nEmail: sample@example.com\n```\nWe show the syntax.";
     const source = `# What are you building?\n${answer}\n\n# Who needs it most?\nTeams.`;

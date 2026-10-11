@@ -1,4 +1,5 @@
 import { installPaste } from "../src/paste";
+import { pasteSettingsChanged } from "../src/settings";
 import type { Decision } from "../src/types";
 
 let armed = false;
@@ -23,7 +24,8 @@ async function refreshArmed(): Promise<boolean> {
 }
 
 void refreshArmed();
-chrome.storage.onChanged.addListener(() => {
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (!pasteSettingsChanged(changes, area)) return;
   controller.cancelPending();
   void refreshArmed();
 });

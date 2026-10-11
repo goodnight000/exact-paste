@@ -27,7 +27,12 @@ try {
   await pasteInto(page, '#linkedin', 'An unrelated clipboard note', 'https://www.linkedin.com/in/saved-maya'); check('saved LinkedIn fallback without a key');
   await pasteInto(page, '#linkedin', 'GitHub: https://github.com/wrong-person', 'https://www.linkedin.com/in/saved-maya'); check('wrong-platform URL cannot replace LinkedIn');
   const huge = '## Background\n' + 'Long source paragraph.\n'.repeat(20000) + '\n## Email\ncopied-late@example.com';
-  await pasteInto(page, '#email', huge, 'copied-late@example.com'); check('header after 440k characters');
+  await pasteInto(page, '#email', huge, 'copied-late@example.com'); check('header after 460k characters');
+  const varied = '## Background\n' + Array.from({ length: 12000 }, (_, index) =>
+    `Paragraph ${index} contains different text about the application and its history.\n`).join('') + '\n## Email\nvaried-late@example.com';
+  await pasteInto(page, '#email', varied, 'varied-late@example.com'); check('late header in a large template with varied prose');
+  const whitespace = '# A' + ' '.repeat(100000) + 'B\n## Email\nwhitespace@example.com';
+  await pasteInto(page, '#email', whitespace, 'whitespace@example.com'); check('pathological whitespace cannot stall header matching');
   const answer = 'Exact first paragraph.\n\nThe plan:\n' + 'Keep this complete.\n'.repeat(1000) + '\n### Internal details\nLiteral heading stays in the answer.';
   const template = `## What are you building?\n${answer}\n\n## Why this idea?\nAnother answer.`;
   await pasteInto(page, '#question', template, answer); check('complete 19k multiline answer with nested heading');
@@ -165,6 +170,57 @@ try {
   assert.equal(await options.$eval('#notes', (el) => el.value), 'Changed elsewhere\nEmail: current@example.com');
   assert.equal(await options.$eval('#rows', (el) => el.querySelectorAll('.value').length), 0);
   check('settings use current vault when structured profile has drifted');
+  // Hold the worker response while a background page writes inactive storage.
+  // This recreates the race without a model request or a timing-dependent sleep.
+  await page.bringToFront();
+  const pageSession = await page.createCDPSession();
+  const contexts = [];
+  pageSession.on('Runtime.executionContextCreated', ({ context }) => { contexts.push(context); });
+  await pageSession.send('Runtime.enable');
+  let contentContext;
+  for (const context of contexts.filter((context) => !context.auxData?.isDefault)) {
+    const { result } = await pageSession.send('Runtime.evaluate', {
+      expression: 'typeof chrome !== "undefined" && chrome.runtime?.id', contextId: context.id, returnByValue: true,
+    });
+    if (result.value === new URL(extensionOrigin).host) { contentContext = context.id; break; }
+  }
+  assert.ok(contentContext, 'extension content context must be available');
+  await pageSession.send('Runtime.evaluate', { contextId: contentContext, expression: `
+    globalThis.__pasteTestStorageChange = new Promise((resolve) => {
+      const listener = (changes, area) => {
+        if (area !== 'local' || !changes.backgroundDraftProbe) return;
+        chrome.storage.onChanged.removeListener(listener); resolve(true);
+      };
+      chrome.storage.onChanged.addListener(listener);
+    }); true;
+  ` });
+  const workerTarget = browser.targets().find((target) => target.type() === 'service_worker');
+  const debuggerSession = await workerTarget.createCDPSession();
+  await debuggerSession.send('Debugger.enable');
+  const paused = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Worker debugger did not pause')), 4000);
+    debuggerSession.once('Debugger.paused', () => { clearTimeout(timer); resolve(); });
+  });
+  const pauseTrigger = debuggerSession.send('Runtime.evaluate', { expression: 'debugger;' });
+  await paused;
+  try {
+    await page.bringToFront();
+    await setClipboard(page, 'Email: pending@example.com');
+    await page.click('input[name=email]'); await shortcut(page, 'v');
+    await options.evaluate(() => chrome.storage.session.set({ optionsDraft: {
+      profile: { version: 1, fields: [], notes: 'Unsaved background edit' }, apiKey: '',
+    } }));
+    await options.evaluate(() => chrome.storage.local.set({ backgroundDraftProbe: 'Inactive metadata' }));
+    const acknowledgement = await pageSession.send('Runtime.evaluate', {
+      contextId: contentContext, expression: '__pasteTestStorageChange', awaitPromise: true, timeout: 3000,
+    });
+    assert.equal(acknowledgement.result.value, true, 'content script must observe the inactive storage write');
+  } finally {
+    await debuggerSession.send('Debugger.resume'); await pauseTrigger; await debuggerSession.detach();
+    await pageSession.detach();
+  }
+  await page.waitForFunction(() => document.querySelector('input[name=email]').value === 'pending@example.com', { timeout: 6500 });
+  check('unsaved drafts and unrelated storage do not cancel a pending paste');
   await options.close();
   console.log(`${passed} real-browser checks passed. No Jev calls or personal browser session used.`);
 } finally { await app.close(); }
