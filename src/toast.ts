@@ -173,7 +173,7 @@ type Spot = { left: number; top: number };
 
 // A choice is focused and modal, so it opens like a dropdown: below the field when it fits, otherwise above.
 // Every other panel stays clear of the page's other controls, so a click meant for the next field never lands on Undo:
-// below, beside, above, then the bottom-right corner. Never covers the field when there is room.
+// below, beside, above, then the viewport corners. Never covers the field when there is room.
 export function placeToast(panel: HTMLElement, anchor: Element | null): void {
   const doc = panel.ownerDocument, view = doc.defaultView;
   if (!view) return;
@@ -190,12 +190,16 @@ export function placeToast(panel: HTMLElement, anchor: Element | null): void {
     if (panel.dataset.tone !== "choice") {
       const beside = { left: rect.right + gap, top: rect.top + (rect.height - height) / 2 };
       if (beside.left + width <= vw - gap && fits(beside.top)) spots.splice(spots[0] === below ? 1 : 0, 0, beside);
+      const leftBeside = { left: rect.left - width - gap, top: beside.top };
+      if (leftBeside.left >= gap && fits(leftBeside.top)) spots.push(leftBeside);
+      spots.push(corner, { left: gap, top: corner.top },
+        { left: corner.left, top: gap }, { left: gap, top: gap });
       // ponytail: rescans the page's controls on every scroll; cache the rects if a huge form makes this measurable.
       const others = [...doc.querySelectorAll(CONTROLS)].filter((el) => el !== anchor && !el.contains(anchor) && !panel.contains(el))
         .map((el) => el.getBoundingClientRect()).filter((r) => r.width && r.height);
       const free = ({ left, top }: Spot): boolean => [rect, ...others].every((r) =>
         r.right <= left || r.left >= left + width || r.bottom <= top || r.top >= top + height);
-      spot = spots.find(free) ?? (free(corner) ? corner : spots[0] ?? { left: rect.left, top: vh - height - gap });
+      spot = spots.find(free) ?? spots[0] ?? { left: rect.left, top: vh - height - gap };
     } else spot = spots[0] ?? { left: rect.left, top: vh - height - gap };
   }
   panel.style.left = `${Math.round(clamp(spot).left)}px`;
