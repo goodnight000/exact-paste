@@ -9,13 +9,14 @@ const built = spawnSync(process.execPath, [join(root, "scripts/build.mjs"), "--k
 if (built.status !== 0) process.exit(built.status ?? 1);
 
 // Keep the archive portable without depending on a platform's zip executable.
-const files = ["manifest.json", "content.js", "worker.js", "options.html", "options.js",
+const files = ["manifest.json", "content.js", "worker.js", "options.html", "options.js", "welcome.html", "welcome.js",
   ...(await readdir(join(root, "dist/icons"))).filter((name) => /^\d+\.png$/.test(name)).map((name) => `icons/${name}`)];
+async function archive(prefix, filename) {
 const local = [];
 const central = [];
 let offset = 0;
 for (const file of files) {
-  const name = Buffer.from(`exact-paste/${file}`);
+  const name = Buffer.from(`${prefix}${file}`);
   const data = await readFile(join(root, "dist", file));
   const crc = crc32(data) >>> 0;
   const header = Buffer.alloc(30);
@@ -37,5 +38,8 @@ const end = Buffer.alloc(22);
 end.writeUInt32LE(0x06054b50); end.writeUInt16LE(files.length, 8); end.writeUInt16LE(files.length, 10);
 end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
 await mkdir(join(root, "release"), { recursive: true });
-await writeFile(join(root, "release/exact-paste.zip"), Buffer.concat([...local, directory, end]));
-console.log("Downloadable extension: release/exact-paste.zip (no API key included)");
+await writeFile(join(root, `release/${filename}`), Buffer.concat([...local, directory, end]));
+}
+await archive("exact-paste/", "exact-paste.zip");
+await archive("", "exact-paste-store.zip");
+console.log("Key-free extension: release/exact-paste.zip; Chrome Web Store upload: release/exact-paste-store.zip");

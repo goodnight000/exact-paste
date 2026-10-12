@@ -55,7 +55,12 @@ export async function launchFixture(fixture = '') {
 export async function ready(page) {
   await page.waitForFunction(() => document.documentElement.dataset.exactPaste === 'on');
 }
-export async function pasteInto(page, selector, text, expected, { selectAll = false } = {}) {
+export async function smartShortcut(page) {
+  await page.keyboard.down('Alt'); await page.keyboard.down('Shift');
+  try { await page.keyboard.press('v'); }
+  finally { await page.keyboard.up('Shift'); await page.keyboard.up('Alt'); }
+}
+export async function pasteInto(page, selector, text, expected, { selectAll = true, smart = true } = {}) {
   await page.bringToFront();
   await setClipboard(page, text);
   await page.click(selector);
@@ -67,7 +72,34 @@ export async function pasteInto(page, selector, text, expected, { selectAll = fa
     }
     return el.__pasteTestInputCount;
   });
-  await shortcut(page, 'v');
+  if (smart) {
+    await smartShortcut(page);
+    try { await page.waitForFunction((selector, expected, before) => (document.querySelector(selector).value === expected && document.querySelector(selector).__pasteTestInputCount > before) ||
+      Array.from(document.querySelectorAll('#exact-paste-toast button')).some(el => el.textContent === 'Paste original'),
+      {timeout:6500}, selector, expected, before); } catch (error) {
+      const state = await page.$eval(selector, el => ({ value: el.value.slice(0,80), length: el.value.length,
+        inputs: el.__pasteTestInputCount, focused: document.hasFocus(), active: document.activeElement === el,
+        panel: document.querySelector('#exact-paste-toast')?.textContent,
+        reason: document.querySelector('#exact-paste-toast')?.dataset.reason }));
+      throw new Error('Smart-paste result was not available: '+JSON.stringify(state), { cause: error });
+    }
+    if (await page.$eval(selector, (el,state) => el.value !== state.expected || el.__pasteTestInputCount <= state.before,{before,expected})) {
+      const choice = await page.evaluateHandle((text, expected) => {
+        const buttons=Array.from(document.querySelectorAll('#exact-paste-toast button'));
+        const label='Use: '+(expected.length > 130 ? expected.slice(0,127)+'…' : expected);
+        return buttons.find(el=>el.textContent===label) ?? buttons.find(el=>el.textContent==='Use saved detail') ??
+          (expected===text.replace(/\r\n?/g,'\n') || expected===text.replace(/[\r\n]/g,'') ? buttons.find(el=>el.textContent==='Paste original') : null);
+      },text,expected);
+      const button=choice.asElement();
+      if (!button) {
+        const state = await page.$eval(selector, el => ({ value: el.value.slice(0,80), inputs: el.__pasteTestInputCount,
+          panel: document.querySelector('#exact-paste-toast')?.textContent,
+          reason: document.querySelector('#exact-paste-toast')?.dataset.reason, active: document.activeElement===el }));
+        throw new Error('Expected smart-paste choice was not offered: '+expected.slice(0,80)+' '+JSON.stringify(state));
+      }
+      await button.click(); await choice.dispose();
+    }
+  } else await shortcut(page, 'v');
   try {
     await page.waitForFunction((selector, expected, before) => {
       const el = document.querySelector(selector);

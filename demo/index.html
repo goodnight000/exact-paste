@@ -5,55 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Exact Paste scenes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
-    <style>
-      html, body {
-        margin: 0;
-        min-height: 100%;
-        background: #141414;
-        color: #e8e8e8;
-        font: 16px/1.45 "IBM Plex Sans", ui-sans-serif, sans-serif;
-      }
-      main {
-        width: min(40rem, calc(100% - 48px));
-        margin: 0 auto;
-        padding: 56px 0 80px;
-      }
-      h1 {
-        margin: 0 0 8px;
-        font-size: 22px;
-        font-weight: 500;
-      }
-      p {
-        margin: 0 0 28px;
-        color: #9a9a9a;
-      }
-      a.row {
-        display: grid;
-        grid-template-columns: 7rem 1fr;
-        gap: 16px;
-        padding: 14px 0;
-        border-top: 1px solid #2a2a2a;
-        color: inherit;
-        text-decoration: none;
-      }
-      a.row:last-of-type { border-bottom: 1px solid #2a2a2a; }
-      a.row b { font-weight: 500; }
-      a.row span { color: #9a9a9a; }
-      #ep-status { font-size: 13px; color: #8a8a8a; }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="scene.css" />
   </head>
   <body>
-    <main>
-      <h1>Scenes</h1>
-      <p>Copy the source on the left. Paste into one field at a time.</p>
-      <a class="row" href="keel.html"><b>Ship</b><span>One address in a customer email. Street, city, ZIP from a single copy.</span></a>
-      <a class="row" href="vendor.html"><b>Vendor</b><span>Two people in one thread. Paste should take the electrician Dave said to use.</span></a>
-      <a class="row" href="bill.html"><b>Bill</b><span>A messy invoice. Vendor, number, amount, due date, remit address.</span></a>
-      <a class="row" href="guest.html"><b>Guest</b><span>A plus-one text. First name and last name from one line.</span></a>
-      <a class="row" href="links.html"><b>Links</b><span>Three URLs. Site, GitHub, and LinkedIn each get the matching one.</span></a>
-      <a class="row" href="application.html"><b>Application</b><span>A full answer draft. Each question box gets its section; name, phone, and GitHub come from your saved details.</span></a>
-      <p id="ep-status"></p>
+    <header class="menubar" id="ep-menu"></header>
+    <main class="desk" style="grid-template-columns: minmax(0, 1fr)">
+      <section class="win scenes">
+        <div class="win-bar"><span class="dots"><i></i><i></i><i></i></span><span class="win-title">Scenes</span></div>
+        <div class="win-body">
+          <a href="keel.html"><b>Ship</b><span>Mail → shipping label</span><p>One address in a customer email. Street, city, state, ZIP from a single copy.</p></a>
+          <a href="vendor.html"><b>Vendor</b><span>Team chat → vendor record</span><p>Two people in one message. Paste takes the electrician Dave said to use.</p></a>
+          <a href="bill.html"><b>Bill</b><span>PDF invoice → accounts payable</span><p>Vendor, invoice number, amount, due date, and the remit address.</p></a>
+          <a href="guest.html"><b>Guest</b><span>Text thread → reservation</span><p>First and last name split from one line. Dietary notes stays a normal paste.</p></a>
+          <a href="links.html"><b>Links</b><span>Doc → show notes</span><p>Three URLs. Site, GitHub, and LinkedIn each get the matching one.</p></a>
+          <a href="application.html"><b>Application</b><span>Answer draft → application form</span><p>Each question box gets its section. Name, phone, and GitHub come from saved details.</p></a>
+          <a href="apply.html"><b>Apply</b><span>Vault → job application</span><p>Nothing useful on the clipboard. Every field still fills from the vault.</p></a>
+        </div>
+      </section>
     </main>
     <script src="status.js"></script>
   </body>

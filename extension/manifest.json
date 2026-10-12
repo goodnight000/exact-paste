@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Exact Paste",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Paste the exact value a form field wants, or the whole copied text.",
   "permissions": [
-    "storage"
+    "storage",
+    "clipboardRead"
   ],
   "host_permissions": [
     "https://api.typesafe.ai/*"
@@ -31,11 +32,11 @@
     "128": "icons/128.png"
   },
   "commands": {
-    "toggle-exact-paste": {
+    "smart-paste": {
       "suggested_key": {
         "default": "Alt+Shift+V"
       },
-      "description": "Turn Exact Paste on or off"
+      "description": "Smart paste once into the focused field"
     }
   },
   "content_scripts": [

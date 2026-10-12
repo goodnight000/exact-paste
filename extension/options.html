@@ -9,158 +9,281 @@
         color-scheme: light dark;
         --font: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
         --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-        /* type scale 12 / 13 / 14 / 16 / 20; spacing 4 / 8 / 12 / 16 / 24 / 32 */
-        --bg: #f6f6f4;
+        /* type 12 / 13 / 14 / 16; space 4 / 8 / 12 / 16 / 24 / 32 / 48 */
+        --bg: #f7f8f7;
         --surface: #ffffff;
-        --ink: #1d1f1e;
-        --dim: #5d625f;
-        --faint: #8a8f8c;
-        --line: #e2e3e0;
-        --field: #ffffff;
-        --field-line: #cfd2ce;
-        --accent: #2b6a58;
+        --ink: #18201c;
+        --dim: #5c6661;
+        --faint: #8b938e;
+        --line: #e4e7e5;
+        --field: #f2f4f3;
+        --hover: #eceff0;
+        --accent: #22684f;
         --accent-ink: #ffffff;
-        --ok: #2b6a58;
-        --bad: #a3352b;
-        --focus: #2b6a58;
-        --r: 8px;
+        --bad: #a8402f;
+        --bad-field: #fbefec;
+        --ease: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+        --r: 10px;
+        --r-in: 6px;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #161817;
-          --surface: #1e2120;
-          --ink: #e0e2e0;
-          --dim: #a1a7a3;
-          --faint: #7a807c;
-          --line: #2d312f;
+          --bg: #141615;
+          --surface: #1c1f1e;
+          --ink: #e0e3e1;
+          --dim: #a2aaa5;
+          --faint: #78807b;
+          --line: #2c312f;
           --field: #242826;
-          --field-line: #3a3f3c;
-          --accent: #86b8a6;
-          --accent-ink: #102019;
-          --ok: #86b8a6;
-          --bad: #e39a90;
-          --focus: #86b8a6;
+          --hover: #2a2f2c;
+          --accent: #8cbfac;
+          --accent-ink: #10201a;
+          --bad: #e39a8c;
+          --bad-field: #3a2623;
         }
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; background: var(--bg); color: var(--ink); }
       body { font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
       button, input, textarea { font: inherit; color: inherit; }
-      :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+      button { cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      [hidden] { display: none !important; }
+      .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+      svg.i { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      h1, h2, p { margin: 0; }
 
-      .page { display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; }
-      .top { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--surface); }
-      .top h1 { margin: 0; font-size: 16px; font-weight: 600; }
-      .top .spacer { flex: 1; }
-      .top a { color: var(--dim); font-size: 13px; text-decoration: none; }
-      .top a:hover { color: var(--ink); text-decoration: underline; }
+      .icon-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-in); background: transparent; color: var(--faint); transition: background-color 120ms ease, color 120ms ease, transform 120ms var(--ease); }
+      .icon-btn:active, .ghost:active, #save:active, .kinds button:active { transform: scale(0.97); }
+      .ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-radius: var(--r-in); background: transparent; color: var(--dim); font-size: 13px; font-weight: 500; transition: background-color 120ms ease, color 120ms ease, transform 120ms var(--ease); }
+      @media (hover: hover) and (pointer: fine) {
+        .icon-btn:hover, .ghost:hover { background: var(--hover); color: var(--ink); }
+      }
 
-      .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--dim); }
-      .switch input { appearance: none; margin: 0; width: 34px; height: 20px; border-radius: 10px; background: var(--field-line); position: relative; cursor: pointer; transition: background 160ms ease-out; }
-      .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 8px; background: var(--surface); transition: transform 160ms ease-out; }
+      /* Layout: a context rail beside the one document being edited; the popup stacks them. */
+      .page { display: grid; grid-template-columns: 240px minmax(0, 600px); gap: 48px; justify-content: center; padding: 48px 32px 96px; }
+      .rail { position: sticky; top: 48px; align-self: start; display: grid; gap: 24px; }
+      .brand { display: flex; align-items: center; gap: 8px; }
+      .brand h1 { flex: 1; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+      .mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); }
+      .mark svg { width: 14px; height: 14px; stroke-width: 2.2; }
+
+      /* The two pastes side by side: what the shortcut adds, and what stays native. */
+      .keymap { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin: 0; }
+      .keymap > div { display: contents; }
+      .keymap dd { margin: 0; font-size: 14px; font-weight: 600; transition: opacity 160ms ease; }
+      .keymap .normal dd { font-size: 13px; font-weight: 400; color: var(--dim); }
+      .keys { display: flex; align-items: center; gap: 4px; min-height: 30px; transition: opacity 160ms ease; }
+      .shortcut[data-off] .smart > * { opacity: 0.45; }
+      kbd { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--r-in); background: var(--surface); font: 500 14px/1 var(--font); color: var(--ink); }
+      .normal kbd { border-bottom-width: 1px; background: transparent; color: var(--dim); }
+      .keys .none { font-size: 13px; color: var(--dim); }
+      .link { padding: 0; border: 0; background: none; color: var(--dim); font-size: 13px; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; transition: color 120ms ease, text-decoration-color 120ms ease; }
+      @media (hover: hover) and (pointer: fine) { .link:hover { color: var(--ink); text-decoration-color: currentColor; } }
+      .tweak { margin-top: 12px; }
+      .tweak summary { display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; list-style: none; cursor: pointer; font-size: 13px; color: var(--dim); }
+      .tweak summary::-webkit-details-marker { display: none; }
+      .tweak summary .chev { width: 14px; height: 14px; transition: transform 180ms var(--ease); }
+      .tweak[open] summary .chev { transform: rotate(90deg); }
+      @media (hover: hover) and (pointer: fine) { .tweak summary:hover { color: var(--ink); } }
+      .tweak-body { display: grid; justify-items: start; gap: 10px; padding: 10px 0 2px; }
+      .tweak[open] .tweak-body { animation: fade 180ms ease both; }
+
+      .switch { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--dim); }
+      .switch input { appearance: none; flex: none; margin: 0; width: 32px; height: 18px; border-radius: 9px; background: var(--line); position: relative; cursor: pointer; transition: background-color 160ms ease; }
+      .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 7px; background: var(--surface); box-shadow: 0 1px 2px #0003; transition: transform 200ms var(--ease); }
       .switch input:checked { background: var(--accent); }
       .switch input:checked::after { transform: translateX(14px); }
-      .switch span { min-width: 2ch; }
 
-      main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; width: min(1040px, 100%); margin: 0 auto; padding: 24px 24px 32px; align-items: start; }
-      section + section { margin-top: 24px; }
-      h2 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
-      .lede { margin: 0 0 12px; font-size: 13px; color: var(--dim); }
+      /* The one container on the page: saved details as dividered rows. */
+      .head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .head h2 { flex: 1; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+      .list { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+      .rows { margin: 0; padding: 0; list-style: none; }
+      .rows li { display: grid; grid-template-columns: 16px minmax(0, 1fr) 28px; gap: 4px 12px; align-items: start; padding: 10px 8px 10px 16px; border-bottom: 1px solid var(--line); transition: opacity 140ms ease; }
+      .rows li.empty { display: block; padding: 16px; color: var(--faint); font-size: 13px; }
+      .rows li.enter { animation: row-in 220ms var(--ease) both; }
+      .rows li[data-leaving] { opacity: 0; pointer-events: none; }
+      .rows li > svg { margin-top: 26px; color: var(--faint); }
+      .rows .stack { display: grid; gap: 2px; min-width: 0; }
+      .rows input, .rows textarea { width: 100%; margin: 0; border: 0; border-radius: var(--r-in); outline-offset: 0; }
+      .rows .name { height: 22px; padding: 0 8px; background: transparent; color: var(--dim); font-size: 12px; font-weight: 500; }
+      .rows .name::placeholder { color: var(--faint); }
+      .rows .value { min-height: 34px; padding: 7px 8px; background: var(--field); font-size: 14px; }
+      .rows textarea { display: block; resize: none; field-sizing: content; max-height: 220px; line-height: 1.45; }
+      .rows .value::placeholder { color: var(--faint); }
+      .rows [aria-invalid="true"] { background: var(--bad-field); color: var(--bad); }
+      .rows .name[aria-invalid="true"]::placeholder { color: var(--bad); }
+      .rows .icon-btn { margin-top: 25px; }
+      @media (hover: hover) and (pointer: fine) {
+        .rows .name:hover { background: var(--field); }
+        .rows .icon-btn:hover { color: var(--bad); }
+      }
+      .rows .name:focus { background: var(--field); color: var(--ink); }
+
+      .add { position: relative; padding: 6px 8px; }
+      .add > .ghost { anchor-name: --add; color: var(--accent); }
+      .kinds { position-anchor: --add; inset: auto; top: anchor(bottom); left: anchor(left); margin: 4px 0; position-try-fallbacks: flip-block;
+        min-width: 180px; padding: 4px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink);
+        box-shadow: 0 1px 2px #0000000f, 0 12px 28px -12px #0000003d;
+        opacity: 0; transform: translateY(-4px) scale(0.98); transform-origin: top left;
+        transition: opacity 120ms ease, transform 120ms var(--ease), overlay 120ms allow-discrete, display 120ms allow-discrete; }
+      .kinds:popover-open { display: grid; opacity: 1; transform: none; transition-duration: 160ms; }
+      @starting-style { .kinds:popover-open { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+      .kinds button { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 0; border-radius: var(--r-in); background: transparent; text-align: left; font-size: 14px; transition: background-color 100ms ease, transform 120ms var(--ease); }
+      .kinds button svg { color: var(--faint); }
+      .kinds button[hidden] { display: none; }
+      .kinds hr { width: 100%; height: 1px; margin: 4px 0; border: 0; background: var(--line); }
+      @media (hover: hover) and (pointer: fine) { .kinds button:hover { background: var(--hover); } }
+      .kinds button:focus-visible { outline-offset: -2px; }
+
+      /* Progressive disclosure: secondary sources stay one line until asked for. */
+      .more { margin-top: 24px; border-top: 1px solid var(--line); }
+      .more + .more { margin-top: 0; }
+      .more summary { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 4px; list-style: none; cursor: pointer; font-weight: 600; }
+      .more summary::-webkit-details-marker { display: none; }
+      .more summary svg { color: var(--faint); }
+      .more summary .meta { flex: 1; font-size: 13px; font-weight: 400; color: var(--faint); }
+      .more summary .chev { transition: transform 180ms var(--ease); }
+      .more[open] summary .chev { transform: rotate(90deg); }
+      .more summary:focus-visible { outline-offset: -2px; border-radius: var(--r-in); }
+      .more .body { display: grid; gap: 8px; padding: 0 4px 24px 30px; }
+      .more[open] .body { animation: fade 180ms ease both; }
+      .hint { font-size: 13px; color: var(--dim); }
       code { font: 12px var(--mono); }
+      #notes { width: 100%; min-height: 140px; max-height: 360px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-in); background: var(--surface); resize: vertical; field-sizing: content; font: 13px/1.55 var(--mono); }
+      .field-label { font-size: 13px; font-weight: 500; }
+      .key { display: flex; gap: 4px; align-items: center; padding: 2px 2px 2px 0; border: 1px solid var(--line); border-radius: var(--r-in); background: var(--surface); }
+      .key:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .key input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 0; background: transparent; font: 13px var(--mono); outline: none; }
+      .jev-state { min-height: 1.45em; font-size: 13px; color: var(--dim); }
 
-      .rows { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
-      .rows li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 32px; gap: 8px; align-items: start; padding: 8px; }
-      .rows li + li { border-top: 1px solid var(--line); }
-      .rows .empty { display: block; padding: 16px; color: var(--faint); font-size: 13px; }
-      .rows input, .rows textarea, .notes textarea, .key input {
-        width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--field);
+      /* Save bar appears only when there is something to save or say; its space is always reserved. */
+      .bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 12px 16px; pointer-events: none; }
+      .bar-inner { display: flex; align-items: center; gap: 8px; width: min(100%, 888px); min-height: 48px; padding: 6px 6px 6px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 1px 2px #0000000f, 0 12px 28px -12px #0000003d;
+        opacity: 0; transform: translateY(12px); transition: opacity 160ms ease, transform 240ms var(--ease-drawer); }
+      .bar[data-shown] .bar-inner { opacity: 1; transform: none; pointer-events: auto; }
+      .status { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--dim); }
+      .status[data-tone="ok"] { color: var(--accent); }
+      .status[data-tone="bad"] { color: var(--bad); }
+      .bar button { height: 36px; padding: 0 16px; border-radius: 6px; font-size: 14px; font-weight: 600; }
+      #discard { border: 0; background: transparent; color: var(--dim); font-weight: 500; }
+      #discard[hidden], #save:disabled:not([aria-busy]) { display: none; }
+      #save { border: 0; background: var(--accent); color: var(--accent-ink); transition: transform 120ms var(--ease), opacity 120ms ease; }
+      #save[aria-busy] { opacity: 0.7; cursor: default; }
+
+      @keyframes row-in { from { opacity: 0; transform: translateY(-4px); } }
+      @keyframes fade { from { opacity: 0; } }
+
+      /* Popup and narrow windows: the rail becomes a header. */
+      @media (max-width: 760px) {
+        .page { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 16px 16px 88px; }
+        .rail { position: static; gap: 16px; }
       }
-      .rows .name { border-color: transparent; background: transparent; color: var(--dim); font-size: 13px; }
-      .rows .name:hover, .rows .name:focus { border-color: var(--field-line); background: var(--field); color: var(--ink); }
-      .rows textarea { resize: none; field-sizing: content; max-height: 220px; line-height: 1.45; }
-      .rows .name[aria-invalid="true"], .rows .value[aria-invalid="true"] { border-color: var(--bad); }
-      .remove { width: 32px; height: 34px; border: 0; border-radius: 6px; background: transparent; color: var(--faint); cursor: pointer; font-size: 18px; line-height: 1; }
-      .remove:hover { background: var(--line); color: var(--ink); }
+      body.popup { width: 380px; }
+      body.popup .page { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 16px 16px 80px; }
+      body.popup .rail { position: static; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+      body.popup .bar { padding: 8px; }
+      body.popup .head h2 { font-size: 14px; }
 
-      .add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-      .add button { height: 30px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--surface); color: var(--dim); font-size: 13px; cursor: pointer; }
-      .add button:hover { color: var(--ink); border-color: var(--dim); }
-      .add button[hidden] { display: none; }
-
-      .notes textarea { min-height: 220px; resize: vertical; font: 13px/1.5 var(--mono); }
-
-      .rail { position: sticky; top: 24px; display: grid; gap: 24px; }
-      .rail section + section { margin-top: 0; }
-      .key { display: flex; gap: 8px; }
-      .key input { font: 13px var(--mono); }
-      .key button { flex: none; height: 34px; padding: 0 10px; border: 1px solid var(--field-line); border-radius: 6px; background: var(--surface); color: var(--dim); cursor: pointer; font-size: 13px; }
-      .facts { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--dim); }
-      .facts li { padding: 8px 0; border-top: 1px solid var(--line); }
-      .facts b { color: var(--ink); font-weight: 600; }
-      .jev-state { margin: 8px 0 0; font-size: 13px; color: var(--dim); min-height: 1.45em; }
-
-      details summary { cursor: pointer; font-size: 14px; font-weight: 600; }
-      details pre { margin: 8px 0 0; max-height: 260px; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; color: var(--dim); }
-
-      .bar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--surface); }
-      .bar .status { flex: 1; min-height: 1.45em; font-size: 13px; color: var(--dim); }
-      .bar .status[data-tone="ok"] { color: var(--ok); }
-      .bar .status[data-tone="bad"] { color: var(--bad); }
-      .bar button { height: 34px; padding: 0 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-      #discard { border: 1px solid var(--field-line); background: transparent; color: var(--dim); }
-      #discard[hidden] { display: none; }
-      #save { min-width: 84px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-      #save:disabled { opacity: 0.55; cursor: default; }
-
-      /* Popup and narrow windows: one column, rail sections follow the work. */
-      @media (max-width: 720px) {
-        .top { padding: 12px 16px; }
-        main { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 16px; }
-        .rail { position: static; }
-        .rows li { grid-template-columns: 6.5rem minmax(0, 1fr) 28px; gap: 4px; padding: 6px; }
-        .remove { width: 28px; }
-        .notes textarea { min-height: 160px; }
-        .bar { padding: 10px 16px; }
+      @media (prefers-reduced-motion: reduce) {
+        .bar-inner { transform: none; }
+        .kinds, .kinds:popover-open { transform: none; }
+        @starting-style { .kinds:popover-open { transform: none; } }
+        .rows li.enter { animation-name: fade; }
+        .more summary .chev, .tweak summary .chev, .switch input::after { transition: none; }
+        .icon-btn:active, .ghost:active, #save:active, .kinds button:active { transform: none; }
       }
-      body.popup { width: 400px; }
-      body.popup .page { min-height: 0; height: 580px; }
-      body.popup main { overflow: auto; }
-      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
   </head>
   <body>
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-mark" viewBox="0 0 24 24"><path d="M8.5 5h7M8.5 19h7M12 5v14" /></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" /></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" /><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.5M12 17h.01" /></symbol>
+      <symbol id="i-plus"viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v5M12 16.5h.01" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><path d="M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><path d="M4 4l16 16" /></symbol>
+      <symbol id="i-jev" viewBox="0 0 24 24"><path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9zM18.5 16v4M16.5 18h4" /></symbol>
+      <symbol id="i-name" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5a7.5 7.5 0 0 1 15 0" /></symbol>
+      <symbol id="i-email" viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5z" /><path d="M4 7l8 6 8-6" /></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M8 2.5h8a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5zM11 18h2" /></symbol>
+      <symbol id="i-linkedin" viewBox="0 0 24 24"><path d="M5 7.5h14a1.5 1.5 0 0 1 1.5 1.5v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 5 7.5zM9 7.5V5.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3.5 13h17" /></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path d="M8.5 8l-4 4 4 4M15.5 8l4 4-4 4M13.5 5.5l-3 13" /></symbol>
+      <symbol id="i-website" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.4 2.5 3.5 5.5 3.5 9s-1.1 6.5-3.5 9c-2.4-2.5-3.5-5.5-3.5-9s1.1-6.5 3.5-9z" /></symbol>
+      <symbol id="i-custom" viewBox="0 0 24 24"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h9" /></symbol>
+    </svg>
+
     <div class="page">
-      <header class="top">
-        <h1>Exact Paste</h1>
-        <label class="switch">
-          <input id="enabled" type="checkbox" role="switch" checked />
-          <span id="enabled-label">On</span>
-        </label>
-        <span class="spacer"></span>
-        <a id="full" href="options.html" target="_blank" hidden>Open full page</a>
-      </header>
+      <aside class="rail">
+        <header class="brand">
+          <span class="mark" aria-hidden="true"><svg class="i"><use href="#i-mark" /></svg></span>
+          <h1>Exact Paste</h1>
+          <a id="tutorial" class="icon-btn" href="welcome.html" target="_blank" title="Practice smart paste" aria-label="Practice smart paste"><svg class="i"><use href="#i-help" /></svg></a>
+          <a id="full" class="icon-btn" href="options.html" target="_blank" title="Open in a tab" aria-label="Open in a tab" hidden><svg class="i"><use href="#i-expand" /></svg></a>
+        </header>
+        <section class="shortcut" id="shortcut" aria-labelledby="shortcut-h">
+          <h2 id="shortcut-h" class="sr">Shortcuts</h2>
+          <dl class="keymap">
+            <div class="smart">
+              <dt class="keys" id="shortcut-state" role="status"></dt>
+              <dd id="smart-label">Smart paste once</dd>
+            </div>
+            <div class="normal">
+              <dt class="keys" id="normal-keys"></dt>
+              <dd>Normal paste, unchanged</dd>
+            </div>
+          </dl>
+          <details class="tweak" id="shortcut-more">
+            <summary>Shortcut options<svg class="i chev"><use href="#i-chev" /></svg></summary>
+            <div class="tweak-body">
+              <label class="switch">
+                <input id="enabled" type="checkbox" role="switch" checked />
+                <span id="enabled-label">Smart paste shortcut</span>
+              </label>
+              <button id="shortcuts" class="link" type="button">Change shortcut</button>
+            </div>
+          </details>
+        </section>
+      </aside>
 
       <main inert>
-        <div class="work">
-          <section aria-labelledby="fields-h">
-            <h2 id="fields-h">Your details</h2>
-            <p class="lede">Used when the copied text has no clear match for the field you paste into.</p>
+        <section aria-labelledby="fields-h">
+          <div class="head">
+            <h2 id="fields-h">Saved details</h2>
+            <label class="switch">
+              <span>Offer when clipboard has no match</span>
+              <input id="use-saved" type="checkbox" role="switch" />
+            </label>
+          </div>
+          <div class="list">
             <ul id="rows" class="rows"></ul>
-            <div class="add" role="group" aria-label="Add a field">
-              <button type="button" data-kind="name">+ Name</button>
-              <button type="button" data-kind="email">+ Email</button>
-              <button type="button" data-kind="phone">+ Phone</button>
-              <button type="button" data-kind="linkedin">+ LinkedIn</button>
-              <button type="button" data-kind="github">+ GitHub</button>
-              <button type="button" data-kind="website">+ Website</button>
-              <button type="button" data-kind="custom">+ Custom field</button>
+            <div class="add">
+              <button id="add" class="ghost" type="button" popovertarget="kinds"><svg class="i"><use href="#i-plus" /></svg>Add detail</button>
+              <div id="kinds" class="kinds" popover role="group" aria-label="Add a field">
+                <button type="button" data-kind="name"><svg class="i"><use href="#i-name" /></svg>Name</button>
+                <button type="button" data-kind="email"><svg class="i"><use href="#i-email" /></svg>Email</button>
+                <button type="button" data-kind="phone"><svg class="i"><use href="#i-phone" /></svg>Phone</button>
+                <button type="button" data-kind="linkedin"><svg class="i"><use href="#i-linkedin" /></svg>LinkedIn</button>
+                <button type="button" data-kind="github"><svg class="i"><use href="#i-github" /></svg>GitHub</button>
+                <button type="button" data-kind="website"><svg class="i"><use href="#i-website" /></svg>Website</button>
+                <hr />
+                <button type="button" data-kind="custom"><svg class="i"><use href="#i-custom" /></svg>Custom field</button>
+              </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section class="notes" aria-labelledby="notes-h">
-            <h2 id="notes-h"><label for="notes">Long answers and notes</label></h2>
-            <p class="lede" id="notes-d">Put each question on its own line with the answer below it, or use <code>Label: value</code>.</p>
+        <details class="more" id="notes-more">
+          <summary><svg class="i"><use href="#i-custom" /></svg>Long answers <span class="meta" id="notes-meta"></span><svg class="i chev"><use href="#i-chev" /></svg></summary>
+          <div class="body">
+            <label class="sr" for="notes">Long answers and notes</label>
             <textarea
               id="notes"
               spellcheck="true"
@@ -171,37 +294,30 @@ A ledger that reconciles itself.
 Why did you pick this idea?
 We ran payments at a marketplace for four years."
             ></textarea>
-          </section>
-        </div>
+            <p class="hint" id="notes-d">Question on one line, answer below it. Or <code>Label: value</code>.</p>
+          </div>
+        </details>
 
-        <aside class="rail">
-          <section aria-labelledby="jev-h">
-            <h2 id="jev-h"><label for="key">TypeSafe API key</label></h2>
-            <p class="lede" id="key-d">Optional. Matching by label and platform runs on this device without a key.</p>
+        <details class="more" id="jev-more">
+          <summary><svg class="i"><use href="#i-jev" /></svg>Ask Jev <span class="meta" id="jev-meta">Optional</span><svg class="i chev"><use href="#i-chev" /></svg></summary>
+          <div class="body">
+            <p class="hint" id="key-d">Adds an Ask Jev choice when a match is unsure. Only choosing it sends your clipboard, field labels and enabled notes to api.typesafe.ai.</p>
+            <label class="field-label" for="key">TypeSafe API key</label>
             <div class="key">
               <input id="key" type="password" autocomplete="off" spellcheck="false" aria-describedby="key-d jev-state" placeholder="Not set" />
-              <button id="reveal" type="button" aria-pressed="false">Show</button>
+              <button id="reveal" class="icon-btn" type="button" aria-pressed="false" aria-label="Show key" title="Show key"><svg class="i"><use href="#i-eye" /></svg></button>
             </div>
             <p class="jev-state" id="jev-state"></p>
-            <ul class="facts">
-              <li><b>On this device:</b> label, header, and link matching against your clipboard and the details above.</li>
-              <li><b>With a key:</b> when that is unsure, the copied text (or your saved details, on fallback) and the field's label and nearby page text go to api.typesafe.ai for Jev to pick a value.</li>
-            </ul>
-          </section>
-
-          <section>
-            <details>
-              <summary>Saved text</summary>
-              <pre id="preview" aria-label="Text Exact Paste reads when the clipboard has no match"></pre>
-            </details>
-          </section>
-        </aside>
+          </div>
+        </details>
       </main>
 
-      <footer class="bar">
-        <p class="status" id="status" role="status" aria-live="polite"></p>
-        <button id="discard" type="button" hidden>Discard</button>
-        <button id="save" type="button" disabled>Save</button>
+      <footer class="bar" id="bar" inert>
+        <div class="bar-inner">
+          <p class="status" id="status" role="status" aria-live="polite"></p>
+          <button id="discard" type="button" hidden>Discard</button>
+          <button id="save" type="button" disabled>Save</button>
+        </div>
       </footer>
     </div>
     <script src="options.js"></script>

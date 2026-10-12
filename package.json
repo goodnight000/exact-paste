@@ -1,7 +1,7 @@
 {
   "name": "exact-paste",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Paste the exact value a Chrome form field wants, or the whole copied text.",
   "repository": {
@@ -30,6 +30,7 @@
     "open": "node scripts/open-chrome.mjs",
     "package": "node scripts/package.mjs",
     "verify": "node scripts/verify.mjs",
+    "rehearse": "node --env-file-if-exists=.env scripts/rehearse.mjs",
     "record-demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {

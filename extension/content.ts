@@ -1,55 +1,44 @@
 import { installPaste } from "../src/paste";
 import { pasteSettingsChanged } from "../src/settings";
 import type { Decision } from "../src/types";
-
+import { deepActiveElement } from "../src/field";
 let armed = false;
-
-function mark(state: "on" | "off"): void {
-  document.documentElement.dataset.exactPaste = state;
-}
-
-mark("off");
-
-async function refreshArmed(): Promise<boolean> {
+let jev = false;
+let shortcut = "";
+async function refresh(): Promise<void> {
   try {
-    const status = (await chrome.runtime.sendMessage({ type: "status" })) as {
-      ready?: boolean;
-    };
-    armed = Boolean(status?.ready);
-  } catch {
-    armed = false;
-  }
-  mark(armed ? "on" : "off");
-  return armed;
+    const state = await chrome.runtime.sendMessage({ type: "status" });
+    armed = state?.enabled === true; jev = state?.jev === true;
+    shortcut = (state?.shortcut ?? "").replace(/⌥/g, "Alt+").replace(/⇧/g, "Shift+").replace(/⌘/g, "Meta+").replace(/⌃/g, "Ctrl+");
+  } catch { armed = false; jev = false; }
+  document.documentElement.dataset.exactPaste = armed ? "on" : "off";
 }
-
-void refreshArmed();
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (!pasteSettingsChanged(changes, area)) return;
-  controller.cancelPending();
-  void refreshArmed();
-});
-
-function toast(mode: Decision["mode"], value: string): void {
-  if (mode !== "slice") return;
-  document.getElementById("exact-paste-toast")?.remove();
-  const el = document.createElement("div");
-  el.id = "exact-paste-toast";
-  el.setAttribute("role", "status");
-  el.textContent = value.length > 48 ? `${value.slice(0, 45)}…` : value;
-  el.style.cssText =
-    "position:fixed;z-index:2147483647;left:16px;bottom:16px;max-width:280px;padding:8px 10px;border-radius:6px;background:#1b1b1b;color:#e8e8e8;font:12px/1.3 ui-sans-serif,system-ui,sans-serif;box-shadow:0 4px 16px rgb(0 0 0 / 0.35);pointer-events:none";
-  document.documentElement.append(el);
-  window.setTimeout(() => el.remove(), 1200);
-}
-
 const controller = installPaste({
   enabled: () => armed,
-  decide: async (text, field) => chrome.runtime.sendMessage({ type: "decide", text, field }) as Promise<Decision>,
-  applied: (decision, el, written) => {
-    if (written) toast(decision.mode, el.value);
-    else if (decision.mode === "slice" && el.maxLength >= 0 && decision.value.length > el.maxLength) {
-      toast("slice", "Too long for this field. Nothing pasted.");
-    }
-  },
+  readClipboard: () => navigator.clipboard.readText(),
+  modelAvailable: () => jev,
+  decide: async (text, field, model) => chrome.runtime.sendMessage({ type: "decide", text, field, model }) as Promise<Decision>,
 });
+// Chrome handles registered commands before page keys. This also supports Chrome's
+// headless editing path, where the browser accelerator is not dispatched.
+document.addEventListener("keydown", (event) => {
+  if (!event.isTrusted || event.defaultPrevented || event.repeat || event.isComposing || !armed || !shortcut) return;
+  const keys = shortcut.toLowerCase().replace(/option/g, "alt").replace(/command/g, "meta").split("+");
+  const key = keys[keys.length - 1];
+  const code = /^\d$/.test(key ?? "") ? `Digit${key}` : `Key${key?.toUpperCase()}`;
+  if (event.code !== code || event.altKey !== keys.includes("alt") ||
+    event.shiftKey !== keys.includes("shift") || event.ctrlKey !== (keys.includes("ctrl") || keys.includes("control")) ||
+    event.metaKey !== keys.includes("meta")) return;
+  event.preventDefault(); event.stopImmediatePropagation(); void controller.run();
+}, true);
+chrome.runtime.onMessage.addListener((message, sender, reply) => {
+  if (sender.id !== chrome.runtime.id || message?.type !== "smart-paste" || !document.hasFocus()) return;
+  if (deepActiveElement() instanceof HTMLIFrameElement) return;
+  void controller.run().then(() => reply({ ok: true }), () => reply({ ok: false }));
+  return true;
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (!pasteSettingsChanged(changes, area)) return;
+  controller.cancelPending(); void refresh();
+});
+void refresh();

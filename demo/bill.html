@@ -2,74 +2,84 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Ledger · Enter bill</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500&display=swap" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>New bill · Ledger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="scene.css" />
     <style>
-      * { box-sizing: border-box; }
-      html, body { margin:0; height:100%; background:#f3efe6; color:#1c1b18; font:15px/1.45 "IBM Plex Sans", sans-serif; }
-      .app { display:grid; grid-template-rows:52px 1fr; height:100%; }
-      .bar { display:flex; align-items:center; gap:22px; padding:0 22px; background:#ebe6db; border-bottom:1px solid #d9d2c4; }
-      .bar strong { font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
-      .bar a { color:#6a655c; text-decoration:none; font-size:13px; }
-      .spacer { flex:1; }
-      .bar em { font-style:normal; color:#6a655c; font-size:13px; }
-      .work { display:grid; grid-template-columns:minmax(300px, 44%) 1fr; min-height:0; }
-      .invoice { overflow:auto; padding:36px 40px; background:#fffdf8; border-right:1px solid #d9d2c4; font-family:"IBM Plex Serif", serif; }
-      .invoice h1 { margin:0 0 4px; font-size:22px; font-weight:500; }
-      .invoice .num { color:#6a655c; margin:0 0 28px; font:15px "IBM Plex Sans", sans-serif; }
-      .invoice pre { margin:0; font:17px/1.55 "IBM Plex Serif", serif; white-space:pre-wrap; }
-      .enter { overflow:auto; padding:28px 36px; }
-      .enter h2 { margin:0 0 22px; font-size:18px; font-weight:500; }
-      form { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; max-width:520px; }
-      label { display:flex; flex-direction:column; gap:6px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#6a655c; }
-      .wide { grid-column:1/-1; }
-      input { height:40px; padding:0 11px; border:1px solid #c9c2b4; border-radius:5px; background:#fff; color:#1c1b18; font:15px "IBM Plex Sans", sans-serif; }
-      .go { grid-column:1/-1; margin-top:8px; width:fit-content; height:40px; padding:0 16px; border:0; border-radius:5px; background:#1c1b18; color:#f3efe6; font:500 14px "IBM Plex Sans", sans-serif; }
+      :root { --accent: #1d6b43; }
     </style>
   </head>
   <body>
-    <div class="app">
-      <header class="bar">
-        <strong>Ledger</strong>
-        <a href="index.html">Scenes</a>
-        <span class="spacer"></span>
-        <em id="ep-status"></em>
-      </header>
-      <div class="work">
-        <section class="invoice">
-          <h1>Norr Press LLC</h1>
-          <p class="num">INV-8841 · due 12 May 2026</p>
-          <pre>Please pay Norr Press LLC.
-
-Invoice INV-8841
-Amount due: 1240.00
-Due: 12 May 2026
-
-Remit to:
-88 Bond Street
-Brooklyn, NY 11222
-United States
-
-pay@norr.press</pre>
-        </section>
-        <section class="enter">
-          <h2>Enter bill</h2>
-          <form action="#" onsubmit="return false">
-            <label class="wide">Vendor <input name="vendor" type="text" autocomplete="organization" /></label>
-            <label>Invoice number <input name="invoice" type="text" /></label>
-            <label>Amount <input name="amount" type="text" /></label>
-            <label class="wide">Due date <input name="due" type="text" /></label>
-            <label class="wide">Pay to email <input name="email" type="email" autocomplete="email" /></label>
-            <label class="wide">Street <input name="street" type="text" autocomplete="street-address" /></label>
-            <label>City <input name="city" type="text" autocomplete="address-level2" /></label>
-            <label>State <input name="state" type="text" autocomplete="address-level1" /></label>
-            <label>ZIP <input name="zip" type="text" autocomplete="postal-code" /></label>
-            <label class="wide">Country <input name="country" type="text" autocomplete="country-name" /></label>
-            <button class="go" type="button">Save bill</button>
-          </form>
-        </section>
-      </div>
-    </div>
+    <header class="menubar" id="ep-menu"></header>
+    <main class="desk">
+      <section class="win">
+        <div class="win-bar"><span class="dots"><i></i><i></i><i></i></span><span class="win-title">INV-8841.pdf</span></div>
+        <div class="win-body pdf">
+          <div class="pdf-tools"><span>Page 1 of 1</span><span>100%</span></div>
+          <div class="pdf-canvas">
+            <div class="page copy">
+              <h1>Norr Press LLC</h1>
+              <div class="meta">
+                <div><div>Invoice INV-8841</div><div class="small">Issued: 28 April 2026</div><div class="small">Due: 12 May 2026</div></div>
+                <div><div class="small">Bill to:</div><div>Keel Ceramics</div><div class="small">Attn: Accounts payable</div></div>
+              </div>
+              <div class="items">
+                <div><span>Description</span><span>Qty</span><span>Amount</span></div>
+                <div><span>Hang tags, two colour letterpress</span><span>500</span><span>1240.00</span></div>
+              </div>
+              <div class="due">Amount due: 1240.00</div>
+              <div>Please pay Norr Press LLC.</div>
+              <div class="small">Remit to:</div>
+              <div>88 Bond Street</div>
+              <div>Brooklyn, NY 11222</div>
+              <div>United States</div>
+              <div>pay@norr.press</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="win">
+        <div class="win-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url"><b>ledger.test</b>/bills/new</span></div>
+        <div class="win-body">
+          <div class="app-bar">
+            <span class="brand"><i></i>Ledger</span>
+            <nav><span>Overview</span><span aria-current="page">Bills</span><span>Vendors</span><span>Reports</span></nav>
+            <span class="end"><span class="avatar sm" style="--av:#1d6b43">KC</span></span>
+          </div>
+          <div class="page-head">
+            <div class="crumbs">Bills / New</div>
+            <h1>New bill</h1>
+            <p>Keel Ceramics · operating account</p>
+          </div>
+          <div class="page-body">
+            <form class="fields" action="#" onsubmit="return false">
+              <label class="f">Vendor <input name="vendor" type="text" autocomplete="organization" /></label>
+              <label class="f s2">Invoice number <input name="invoice" type="text" /></label>
+              <label class="f s2">Amount <input name="amount" type="text" /></label>
+              <label class="f s2">Due date <input name="due" type="text" /></label>
+              <label class="f">Pay to email <input name="email" type="email" autocomplete="email" /></label>
+              <h2>Remit to</h2>
+              <label class="f">Street <input name="street" type="text" autocomplete="street-address" /></label>
+              <label class="f s3">City <input name="city" type="text" autocomplete="address-level2" /></label>
+              <label class="f" style="grid-column: span 1">State <input name="state" type="text" autocomplete="address-level1" /></label>
+              <label class="f s2">ZIP <input name="zip" type="text" autocomplete="postal-code" /></label>
+              <label class="f">Country <input name="country" type="text" autocomplete="country-name" /></label>
+              <div class="actions"><button class="btn primary" type="button">Save bill</button><button class="btn" type="button">Save and add another</button></div>
+            </form>
+            <aside class="rail">
+              <h2>This month</h2>
+              <dl>
+                <dt>Open bills</dt><dd>7</dd>
+                <dt>Due in 14 days</dt><dd>$6,412.80</dd>
+                <dt>Last from this vendor</dt><dd>None on file</dd>
+              </dl>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
     <script src="status.js"></script>
   </body>
 </html>

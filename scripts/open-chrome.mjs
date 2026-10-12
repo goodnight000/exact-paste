@@ -33,12 +33,13 @@ const browser = await puppeteer.launch({
     "--enable-unsafe-extension-debugging",
     "--no-first-run",
     "--no-default-browser-check",
+    "--window-size=1440,960",
     `--user-data-dir=${join(homedir(), ".exact-paste", "chrome-profile")}`,
   ],
 });
 
 const page = (await browser.pages())[0] ?? (await browser.newPage());
-await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
+await page.goto("http://127.0.0.1:4173/application.html", { waitUntil: "domcontentloaded" });
 console.log("Chrome is open with Exact Paste loaded. Leave this terminal running.");
-console.log("The Keel bar should say Exact Paste on. Copy the email, paste into Recipient.");
+console.log("Copy the application draft once. Use Option/Alt+Shift+V in each field. Normal Cmd/Ctrl+V stays normal.");
 await new Promise(() => {});

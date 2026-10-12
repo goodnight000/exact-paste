@@ -1,111 +1,67 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installPaste } from "../src/paste";
 import type { Decision } from "../src/types";
-
 let controller: ReturnType<typeof installPaste>;
 afterEach(() => { controller?.dispose(); vi.useRealTimers(); document.body.innerHTML = ""; });
-
-function mount(decide: () => Promise<Decision>, timeoutMs?: number): HTMLInputElement {
-  document.body.innerHTML = '<form><label>Email<input type="email" id="email"></label></form>';
-  const el = document.querySelector<HTMLInputElement>("input")!;
-  el.focus();
-  controller = installPaste({ enabled: () => true, decide, timeoutMs });
+function mount(decide: () => Promise<Decision>, readClipboard = async () => "Email: copied@example.com", timeoutMs?: number) {
+  document.body.innerHTML = '<form><label>Email<input type="email" id="email"></label><label>Next<input id="next"></label></form>';
+  const el = document.querySelector<HTMLInputElement>("#email")!; el.focus();
+  controller = installPaste({ enabled: () => true, readClipboard, decide, timeoutMs });
   return el;
 }
-
-// Unit driver models Chrome's trusted event. Browser verification uses real Ctrl+V.
-function paste(el: HTMLInputElement, text: string, trusted = true): { prevented: boolean } {
-  const state = { prevented: false };
-  controller.handlePaste({
-    isTrusted: trusted, defaultPrevented: false, target: el,
-    composedPath: () => [el],
-    clipboardData: { types: ["text/plain"], getData: () => text },
-    preventDefault: () => { state.prevented = true; }, stopImmediatePropagation: () => {},
-  } as unknown as ClipboardEvent);
-  return state;
-}
-
-function deferred(): { promise: Promise<Decision>; resolve: (decision: Decision) => void } {
+function deferred() {
   let resolve!: (decision: Decision) => void;
-  const promise = new Promise<Decision>((done) => { resolve = done; });
-  return { promise, resolve };
+  const promise = new Promise<Decision>(done => { resolve = done; }); return {promise,resolve};
 }
-const tick = async (): Promise<void> => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-const answer = (value: string): Decision => ({ mode: "slice", value, reason: "test" });
-
-describe("paste lifecycle", () => {
-  it("does not let a page synthesize pastes to read the vault", async () => {
-    const decide = vi.fn(async () => answer("private@example.com"));
-    const el = mount(decide);
-    expect(paste(el, "probe", false).prevented).toBe(false);
-    await tick();
-    expect(decide).not.toHaveBeenCalled();
-    expect(el.value).toBe("");
+const answer = (value: string): Decision => ({mode:"slice",value,reason:"template-header"});
+describe("one-shot smart paste", () => {
+  it("leaves genuine and synthetic normal paste events untouched", async () => {
+    const decide = vi.fn(async () => answer("private@example.com")); const read = vi.fn(async()=>"probe");
+    const el = mount(decide,read); const event = new Event("paste",{bubbles:true,cancelable:true});
+    el.dispatchEvent(event); expect(event.defaultPrevented).toBe(false); expect(decide).not.toHaveBeenCalled(); expect(read).not.toHaveBeenCalled();
   });
-
-  it("uses a matching trusted paste", async () => {
-    const el = mount(async () => answer("hello@example.com"));
-    expect(paste(el, "Email: hello@example.com").prevented).toBe(true);
-    await tick();
-    expect(el.value).toBe("hello@example.com");
+  it("reads once on invocation and inserts an exact matching header", async () => {
+    const read=vi.fn(async()=>"Email: copied@example.com"); const el=mount(async()=>answer("copied@example.com"),read);
+    await controller.run(); expect(read).toHaveBeenCalledTimes(1); expect(el.value).toBe("copied@example.com");
   });
-
-  it("ignores older replies that arrive after a newer paste", async () => {
-    const first = deferred(); const second = deferred();
-    const el = mount(vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise));
-    paste(el, "first"); paste(el, "second");
-    second.resolve(answer("second@example.com")); await tick();
-    first.resolve(answer("first@example.com")); await tick();
-    expect(el.value).toBe("second@example.com");
+  it("offers an inferred match without writing it", async () => {
+    const el=mount(async()=>({value:"support@example.com",mode:"slice",reason:"one-email"}));
+    await controller.run(); expect(el.value).toBe(""); expect(document.querySelector('#exact-paste-toast')?.textContent).toContain('Choose before inserting');
+    document.querySelector<HTMLButtonElement>('#exact-paste-toast button')!.click(); expect(el.value).toBe("");
   });
-
-  it("keeps user edits even when the value is changed back before the reply", async () => {
-    const pending = deferred(); const el = mount(() => pending.promise);
-    paste(el, "Email: old@example.com");
-    el.value = "typing"; el.dispatchEvent(new Event("input", { bubbles: true })); el.value = "";
-    pending.resolve(answer("old@example.com")); await tick();
-    expect(el.value).toBe("");
+  it("does not let an older reply overwrite the newer invocation", async () => {
+    const first=deferred(),second=deferred(); const el=mount(vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise));
+    const old=controller.run(); await Promise.resolve(); const latest=controller.run(); await Promise.resolve();
+    second.resolve(answer('new@example.com')); await latest; first.resolve(answer('old@example.com')); await old; expect(el.value).toBe('new@example.com');
   });
-
-  it("does not write after the user moves to another field", async () => {
-    const pending = deferred(); const el = mount(() => pending.promise);
-    paste(el, "Email: old@example.com");
-    const next = document.createElement("input"); document.body.append(next); next.focus();
-    pending.resolve(answer("old@example.com")); await tick();
-    expect(el.value).toBe(""); expect(document.activeElement).toBe(next);
+  it("keeps user edits even when the value is changed back", async () => {
+    const pending=deferred(); const el=mount(()=>pending.promise); const task=controller.run(); await Promise.resolve();
+    el.value='typing'; el.dispatchEvent(new Event('input',{bubbles:true})); el.value=''; pending.resolve(answer('old@example.com')); await task; expect(el.value).toBe('');
   });
-
-  it("does not write after selection, disabled state, or settings change", async () => {
-    for (const change of [(el: HTMLInputElement) => { el.disabled = true; }, () => controller.cancelPending()]) {
-      controller?.dispose();
-      const pending = deferred(); const el = mount(() => pending.promise);
-      paste(el, "Email: old@example.com"); change(el);
-      pending.resolve(answer("old@example.com")); await tick(); expect(el.value).toBe("");
+  it("cancels after Tab with a visible result", async () => {
+    const pending=deferred(); const el=mount(()=>pending.promise); const task=controller.run(); await Promise.resolve();
+    document.getElementById('next')!.focus(); pending.resolve(answer('old@example.com')); await task;
+    expect(el.value).toBe(''); expect(document.querySelector('#exact-paste-toast')?.textContent).toContain('cancelled');
+  });
+  it("cancels after settings or field metadata changes", async () => {
+    for (const change of [() => controller.cancelPending(), () => document.querySelector('label')!.firstChild!.textContent='Work email']) {
+      controller?.dispose(); const pending=deferred(); const el=mount(()=>pending.promise); const task=controller.run(); await Promise.resolve();
+      change(); pending.resolve(answer('old@example.com')); await task; expect(el.value).toBe('');
     }
   });
-
-  it("bypasses extraction while Shift is pressed, then resumes", async () => {
-    const decide = vi.fn(async () => answer("saved@example.com")); const el = mount(decide);
-    el.dispatchEvent(new KeyboardEvent("keydown", { key: "V", ctrlKey: true, shiftKey: true, bubbles: true }));
-    expect(paste(el, "whole chunk").prevented).toBe(false); expect(decide).not.toHaveBeenCalled();
-    el.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", bubbles: true }));
-    paste(el, "Email: saved@example.com"); await tick(); expect(el.value).toBe("saved@example.com");
+  it("does not write after disabling or removing the field", async () => {
+    const pending=deferred(); const el=mount(()=>pending.promise); const task=controller.run(); await Promise.resolve();
+    el.disabled=true; pending.resolve(answer('old@example.com')); await task; expect(el.value).toBe('');
   });
-
-  it("falls back within a bounded deadline and ignores a late response", async () => {
-    vi.useFakeTimers(); const pending = deferred(); const el = mount(() => pending.promise, 25);
-    paste(el, "whole clipboard"); await vi.advanceTimersByTimeAsync(25);
-    expect(el.value).toBe("whole clipboard");
-    pending.resolve(answer("late@example.com")); await tick(); expect(el.value).toBe("whole clipboard");
+  it("bounds a timeout and requires a choice instead of dumping the clipboard", async () => {
+    vi.useFakeTimers(); const pending=deferred(); const el=mount(()=>pending.promise,async()=>"whole clipboard",25);
+    const task=controller.run(); await vi.advanceTimersByTimeAsync(25); await task;
+    expect(el.value).toBe(''); expect(document.querySelector('#exact-paste-toast')?.textContent).toContain('Paste original');
+    pending.resolve(answer('late@example.com')); await Promise.resolve(); expect(el.value).toBe('');
   });
-
-  it("recovers from an unavailable worker", async () => {
-    const el = mount(async () => { throw new Error("unloaded"); });
-    paste(el, "whole clipboard"); await tick(); expect(el.value).toBe("whole clipboard");
-  });
-
-  it("ignores an empty clipboard and preserves native rich-only pastes", () => {
-    const decide = vi.fn(async () => answer("saved@example.com")); const el = mount(decide);
-    expect(paste(el, "").prevented).toBe(false); expect(decide).not.toHaveBeenCalled();
+  it("handles unavailable clipboard and worker without deleting a value", async () => {
+    const el=mount(async()=>{throw new Error('worker')}); el.value='old@example.com'; await controller.run(); expect(el.value).toBe('old@example.com');
+    controller.dispose(); const next=mount(async()=>answer('saved@example.com'),async()=>{throw new Error('clipboard')}); await controller.run();
+    expect(next.value).toBe(''); expect(document.querySelector('#exact-paste-toast')?.textContent).toContain('unavailable');
   });
 });

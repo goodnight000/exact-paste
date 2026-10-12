@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { launchFixture, shortcut, ready, root } from './browser-test.mjs';
+import { launchFixture, shortcut, smartShortcut, ready, root } from './browser-test.mjs';
 
 await mkdir(join(root, '.local'), { recursive: true });
 await mkdir(join(root, 'docs'), { recursive: true });
@@ -25,11 +25,14 @@ try {
     ['phone', 'Phone', '+1 415 555 0100'],
   ];
   for (const [kind, label, value] of fields) {
+    await page.click('#add');
     await page.click(`.add button[data-kind=${kind}]`);
     await page.type(`#rows .value[aria-label="${label}"]`, value, { delay: 10 });
     await pause(450);
   }
   await page.click('#save'); await page.waitForFunction(() => document.querySelector('#status').textContent === 'Saved');
+  await page.click('#use-saved'); await page.click('#save');
+  await page.waitForFunction(() => document.querySelector('#status').textContent === 'Saved');
   const storage = await worker.evaluate(() => chrome.storage.local.get(['profile', 'vault']));
   assert.equal(storage.profile.fields.length, 5); assert.match(storage.vault, /LinkedIn:/);
   await page.screenshot({ path: join(root, '.local/settings-real.png') });
@@ -38,6 +41,9 @@ try {
   await page.click('#copy'); await page.waitForFunction(() => document.querySelector('#copy').textContent === 'Copied');
   const source = await page.$eval('#source', (el) => el.textContent);
   await pause(1400);
+  await page.click('input[name=email]'); await shortcut(page,'v'); await pause(1200);
+  await page.keyboard.down(process.platform === 'darwin' ? 'Meta' : 'Control');
+  await page.keyboard.press('z',{commands:['undo']}); await page.keyboard.up(process.platform === 'darwin' ? 'Meta' : 'Control');
   const answers = [
     ['input[name=linkedin]', 'https://www.linkedin.com/in/maya-oduya'],
     ['input[name=email]', 'maya@tallyhand.co'],
@@ -50,21 +56,27 @@ try {
     ['textarea[name=why]', source.split('## Why did you pick this idea?\n')[1].split('\n\n## How far along are you?')[0]],
   ];
   for (const [selector, expected] of answers) {
-    await page.click(selector); await shortcut(page, 'v');
+    await page.click(selector); await smartShortcut(page);
+    await page.waitForFunction((selector,expected)=>document.querySelector(selector).value===expected ||
+      document.querySelector('#exact-paste-toast')?.textContent.includes('Use saved detail'),{},selector,expected);
+    if(await page.$eval(selector,el=>el.value)!==expected) {
+      const button = await page.evaluateHandle(()=>Array.from(document.querySelectorAll('#exact-paste-toast button')).find(el=>el.textContent==='Use saved detail'));
+      await button.asElement().click(); await button.dispose();
+    }
     await page.waitForFunction((selector, expected) => document.querySelector(selector).value === expected,
       { timeout: 6500 }, selector, expected);
     await pause(1200);
   }
   await pause(1800);
   await recorder.stop(); recorder = null;
-  console.log('Recorded genuine profile setup and 9 successful pastes from one clipboard copy.');
+  console.log('Recorded native paste/undo, profile setup, and 9 smart pastes with saved-detail confirmation, from one copy.');
 } finally { await recorder?.stop(); await app.close(); }
 
 for (const args of [
-  ['-y', '-i', join(root, '.local/demo-source.webm'), '-c:v', 'libx264', '-crf', '22', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', join(root, 'docs/exact-paste-demo.mp4')],
-  ['-y', '-i', join(root, 'docs/exact-paste-demo.mp4'), '-vf', 'fps=8,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3', '-loop', '0', join(root, 'docs/exact-paste-demo.gif')],
+  ['-y', '-i', join(root, '.local/demo-source.webm'), '-c:v', 'libx264', '-crf', '22', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', join(root, 'docs/exact-paste-demo-v0.4.mp4')],
+  ['-y', '-i', join(root, 'docs/exact-paste-demo-v0.4.mp4'), '-vf', 'fps=8,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3', '-loop', '0', join(root, 'docs/exact-paste-demo-v0.4.gif')],
 ]) {
   const result = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...args], { stdio: 'inherit' });
   if (result.status !== 0) throw new Error('Demo encoding failed');
 }
-console.log('README video: docs/exact-paste-demo.mp4 and animated preview.');
+console.log('README video: docs/exact-paste-demo-v0.4.mp4 and animated preview.');

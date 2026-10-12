@@ -5,7 +5,7 @@ const CA = /^([A-Za-z .'-]+),\s*([A-Z]{2})\s+([A-Z]\d[A-Z]\s?\d[A-Z]\d)$/i;
 const UK_POST = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 const STREET = /^\d+\s+.+/;
 const UNIT = /^(?:apt|apartment|unit|suite|ste\.?|buzzer|#)\b.+/i;
-const COUNTRIES = [
+export const COUNTRIES = [
   "United States",
   "United Kingdom",
   "Great Britain",
@@ -30,14 +30,21 @@ export type Place = {
 
 export function addressSlot(
   field: FieldInfo,
-): "street" | "unit" | "city" | "state" | "zip" | "country" | null {
-  const auto = field.autocomplete.toLowerCase();
-  if (auto === "street-address" || auto.startsWith("address-line")) return "street";
+): "street" | "full" | "unit" | "city" | "state" | "zip" | "country" | null {
+  const auto = field.autocomplete.toLowerCase().split(/\s+/).pop();
+  if (auto === "street-address") return "full";
+  if (auto === "address-line1") return "street";
+  if (auto === "address-line2") return "unit";
+  if (auto === "address-line3") return null;
   if (auto === "address-level2") return "city";
   if (auto === "address-level1") return "state";
   if (auto === "postal-code") return "zip";
   if (auto === "country" || auto === "country-name") return "country";
-  const label = `${field.label} ${field.placeholder} ${field.name}`.toLowerCase();
+  const label = (field.label || field.placeholder || field.name).toLowerCase().replace(/^(your|my|the)\s+/, "").replace(/[\s:*]+$/, "");
+  if (/^(street address|address|full address)$/.test(label)) return "full";
+  if (/^address line 2$/.test(label)) return "unit";
+  if (/^address line 3$/.test(label)) return null;
+  if (label.split(/\s+/).length > 4 || /[?]/.test(label)) return null;
   if (/\b(apt|unit|suite|buzzer)\b/.test(label)) return "unit";
   if (/\bcountry\b/.test(label)) return "country";
   if (/\bstreet\b|\baddress\b/.test(label) && !/\bcity\b|\bstate\b|\bzip\b/.test(label)) return "street";
@@ -125,6 +132,7 @@ export function addressFastPath(
   }
   const place = usPlace(clipboard);
   if (!place) return null;
+  if (slot === "full") return place.street ? { value: [place.street, place.unit].filter(Boolean).join("\n"), reason: "full-street-address" } : null;
   if (slot === "street") return place.street ? { value: place.street, reason: "us-street" } : null;
   if (slot === "unit") return place.unit ? { value: place.unit, reason: "us-unit" } : null;
   if (slot === "city") return { value: place.city, reason: "us-city" };

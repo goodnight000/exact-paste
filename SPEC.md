@@ -1,65 +1,53 @@
 # Exact Paste contract
 
-A desktop Chrome extension. A genuine user paste into one labelled form field can insert an exact value from the clipboard or saved details. It never generates an answer, fills other fields, or submits a form.
+A desktop Chrome extension. Cmd+V/Ctrl+V always uses Chrome's native paste. Option+Shift+V on Mac or Alt+Shift+V on Windows/Linux requests one smart paste. There is no persistent smart-paste mode. It never generates replacement text, fills other fields, or submits a form.
 
-## Event boundary
+## Invocation and permissions
 
-Only trusted, nonempty plain-text paste events are eligible. Synthetic events, Shift+paste, a disabled extension, and unsupported controls use Chrome's normal paste. Clipboard text comes from the paste event, not background clipboard polling.
+The registered `smart-paste` Chrome command targets the focused tab/frame. A trusted keydown handler supports the same assigned command in Chrome's headless path. Synthetic keyboard, paste, and feedback-button events cannot invoke clipboard access or insert saved values. Users can change or remove the binding at chrome://extensions/shortcuts.
 
-Eligible controls are enabled, visible, editable text/email/phone/URL inputs and labelled application textareas. Accessible-name priority is aria-labelledby, aria-label, associated labels, then placeholder. Sensitive-purpose checks independently inspect placeholders, names, IDs, autocomplete, and label text.
+`clipboardRead` is needed to read text when the shortcut is invoked. There is no clipboard polling or history. Text reading requires a secure page, including HTTPS and localhost. If unavailable, the extension explains how to use normal paste. Unsupported editors use native paste when Chrome permits it.
 
-Password, payment, verification-code, search, comment, and chat controls are excluded. Numeric/date controls and contenteditable use native paste. Open shadow roots and frames created by matching HTTP(S) origins are supported; closed shadow roots, native applications, and Chrome internal pages are not.
+Eligible controls are visible, enabled, editable text/email/phone/URL inputs and labelled textareas. Password, payment, verification-code, search, comment, and chat controls are excluded. Numeric/date controls and rich editors retain native paste. Open shadow roots and matching frames are supported; closed shadow roots, native apps and Chrome internal pages are outside smart support.
 
-## Source precedence
+## Matching and sources
 
-1. A validated exact clipboard match wins.
-2. Conflicting/empty headers, invalid matching values, unsafe model decisions, secrets, and huge uncertain copies preserve the copied text. They cannot borrow an unrelated saved value.
-3. If the clipboard has no clear match, a matching structured saved field can supply its exact value. Duplicate saved labels with different values are ambiguous.
-4. Saved notes or a legacy vault can supply a validated substring if no structured field matches.
-5. Otherwise the decision is the whole clipboard.
+1. An exact normalized clipboard header matching the focused field can insert immediately when the source starts with template headers. Whole-field replacement requires selecting the whole field. Introductory prose before a header makes the match a suggestion.
+2. Local heuristic extraction produces a suggestion, never an automatic write. Uniqueness does not prove identity, ownership or purpose.
+3. Saved details are disabled by default. Enabling “Offer when clipboard has no match” allows an exact saved field or saved note to be offered when the clipboard has no matching answer. Saved suggestions require confirmation and are labelled by source; their values are not exposed in the page before insertion.
+4. Conflicting/empty headers, invalid values, secrets, huge uncertain sources and unsafe model decisions cannot silently borrow saved values.
+5. Otherwise the user can choose a candidate or Paste original. Sources longer than 12,000 characters are not enumerated as uncertain candidates or sent to AI; exact header matching still scans the full source.
 
-Standalone textarea prose stays the whole clipboard. A template missing a textarea answer can use saved data only when another nonempty header exactly matches a nearby form field. Merely containing Markdown is not enough.
+The visible field label takes precedence over machine names. Essay questions mentioning a first name are not name slots. Personal/work and company/personal qualifiers remain distinct. Address line 2 means unit, not street. A full street-address textarea preserves the unit. Invoice number, invoice date and due date use distinct rules. Calling codes and phone extensions have their own shapes. Compound or unspaced names require explicit name-part labels rather than a guessed split.
 
-`profile` and its compatibility `vault` are saved together. The worker uses structured fields directly when the serialized profile agrees with the vault, preserving literal headings and colons inside values. If the vault has changed independently, it takes precedence over the stale profile. Legacy vault text is preserved in notes during migration.
+Header parsing preserves source offsets and complete multiline answers, including nested Markdown and fenced code. Duplicate conflicting answers are rejected. Structured profile fields are used directly, preserving literal headings in saved answers. A changed legacy vault takes precedence over a stale structured copy.
 
-## Local matching
+## Optional Jev
 
-Header parsing scans the entire original source. It accepts exact normalized labels, explicit common aliases, `Label: value`, standalone known labels, Markdown/bold headings, and numbered questions. Unicode normalization affects header comparison only. Answers retain their original offsets and internal text.
+A user's optional TypeSafe key makes an Ask Jev button available. Only choosing that button authorizes the request; an ordinary or local smart paste never calls AI automatically.
 
-Nearby form labels provide plain-template boundaries. Markdown peers end an answer; deeper subheadings and fenced code stay inside it. Unclear plain boundaries and conflicting duplicates fall back. Personal/work and company/personal qualifiers are preserved.
+Model `jev-1.13.0` uses https://api.typesafe.ai/v1/systemone. The complete unresolved clipboard, field metadata/nearby labels, and enabled fallback notes may be sent. Recognized secrets block model requests, but the detector is not a complete sensitive-data classifier. Structured saved fields match locally.
 
-Single-value email, phone, URL, name, address, and business paths remain available. Platform fields validate the actual parsed host, not URL substrings. Independent URLs with shared path prefixes remain separate. Regex bounds avoid expensive rescanning of huge invalid tokens.
+Jev selects a candidate substring and verifies it; it cannot supply new replacement text. Limits remain wants_extracted >=0.72, confidence >=0.5, lead >=0.12 and second verification >=0.82. Probabilities must be finite and within [0,1]; the selected value must be the exact source slice and satisfy field shape/platform checks. At most 40 candidates plus whole/none are offered to the model. Errors and timeouts leave a choice available without writing.
 
-## Jev
+Requests have 2.5s/1.5s selection/verification limits; the worker bounds aggregate API time at 4.5s and the UI reply wait at 5s. Model output always requires user confirmation.
 
-Optional model `jev-1.13.0` through `https://api.typesafe.ai/v1/systemone`.
+## Editing and feedback
 
-Unresolved sources over 12,000 characters never go to the model. Recognized secrets in the source or field metadata also block model requests. This is a conservative detector, not a complete sensitive-data classifier.
+A request captures field identity, value, selection, metadata, limit and settings epoch before reading clipboard text. User input, cursor/selection changes, focus changes, another invocation, settings changes, disabled/removed controls or navigation invalidate it. Late results cannot overwrite work. Cancellation is visible; no late normal fallback is inserted.
 
-Candidate extraction includes template sections, scalar values, short lines, names, and business values with source offsets. At most 40 candidates plus whole and none are offered. Jev never supplies replacement text.
+Smart edits insert at the cursor or replace only the selection using Chrome's native editing command. They create native undo entries. Complete smart values must fit the remaining maxlength; they are never shortened. Native newline/control normalization applies. Email controls do not expose their selection through the DOM, so length checks conservatively account for the existing value.
 
-Selection thresholds remain wants_extracted >=0.72, confidence >=0.5, and probability lead >=0.12. Every probability/noul/confidence must be finite and within [0,1]. The picked candidate must equal its exact source slice and satisfy field shape/platform checks. A second verification requires >=0.82. Exceptions, invalid responses, auth failures, and timeouts fall back.
+Feedback offers Undo and Paste original. Paste original first undoes the smart edit, checks that the original value was restored, then inserts the original clipboard at the captured selection. Actions expire or invalidate after subsequent edits, selection changes, focus/settings changes or navigation. Choice buttons require trusted user input and are keyboard accessible. Escape dismisses feedback and returns from the choice panel to the field.
 
-Individual selection/verification requests have 2.5s/1.5s limits. The worker allows at most 4.5s of API time across clipboard and saved-note decisions. The content script bounds the total reply wait at 5s.
-
-## Applying the decision
-
-Only the original field can be written. A request captures its value, selection, metadata, limit, and settings epoch. A newer paste, user input, focus change, disabled/removed field, or changed settings invalidates it. A late reply cannot overwrite newer work or move focus.
-
-A slice replaces the field only if its complete normalized value fits maxlength. It is never shortened. Browser-native textarea newline normalization applies. A refusal shows "Too long for this field. Nothing pasted."
-
-For a whole fallback, an empty field or a fully selected value receives the clipboard subject to native control limits. A partial selection receives only the text that fits while preserving the unselected suffix. Existing values with no selection stay unchanged. Truncation never splits a UTF-16 surrogate pair.
-
-The native value setter is used. Composed input/change events notify frameworks and shadow-root ancestors. A toast appears for inserted slices. No submit or focus restoration occurs.
+Ordinary paste remains native, including site paste/beforeinput handling, masks, rich formats and undo. Smart editing compatibility is verified in Chrome fixtures; unknown site-specific editors can use normal paste or Chrome's per-site extension access controls.
 
 ## Settings and distribution
 
-Local storage contains enabled, optional apiKey, profile, and vault. Unsaved drafts use extension session storage and do not affect active paste data until Save. The editor stays inert until stored data loads; failed loads cannot overwrite it with an empty form.
+Local storage contains enabled (shortcut availability), optional apiKey, useSaved, profile and compatibility vault. Profile/key/source preference are saved together. Session drafts are inactive until Save. Failed loads cannot overwrite saved data with an empty editor.
 
-Builds omit API keys by default. `--with-key` explicitly creates a personal build from the environment/.env key. A saved key, including an explicit empty key, overrides a baked key. API keys are never returned to the page.
+Builds are key-free by default. An explicit --with-key creates a personal build; never distribute it. `npm run package` forces a key-free build with a fixed file list and creates a downloadable ZIP containing an exact-paste folder plus a store ZIP with manifest.json at its root. Fresh installs open shortcut/setup help.
 
-`npm run package` forces a key-free build and ZIP with a fixed file list. Chrome requires the user to load the unpacked folder. Setup never silently installs an extension or starts a separate persistent browser session.
+## Verification
 
-## Verification boundaries
-
-Local regression tests and the browser harness make no model calls. The harness uses a fresh Chrome profile, the built extension/worker, and native copy/paste commands. Live Jev quality requires the separate API evaluation; a green unit/browser suite does not prove it.
+Unit tests and `npm run verify` make no model calls. Native browser verification uses a temporary Chrome profile, real clipboard/key commands, matching decisions, selection, undo, genuine choice buttons, settings, shadow roots, frames and extracted release ZIPs. `npm run record-demo` records fictional data with no key. Live AI accuracy is a separate opt-in evaluation, not established by local checks.

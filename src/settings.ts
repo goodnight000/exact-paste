@@ -7,5 +7,5 @@ export function vaultText(stored: { vault?: unknown }): string {
 }
 
 export function pasteSettingsChanged(changes: object, area: string): boolean {
-  return area === "local" && ["enabled", "apiKey", "profile", "vault"].some((key) => key in changes);
+  return area === "local" && ["enabled", "apiKey", "profile", "vault", "useSaved"].some((key) => key in changes);
 }

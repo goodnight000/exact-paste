@@ -13,13 +13,20 @@ describe("insertValue", () => {
     expect(events).toEqual(["input", "change"]);
   });
 
-  it("does not dump the whole chunk over an existing value when the slice fails", () => {
+  it("appends an unmatched paste at the cursor without deleting existing text", () => {
     const el = document.createElement("input");
     el.value = "United States";
     el.selectionStart = 13;
     el.selectionEnd = 13;
     applyPaste(el, { mode: "whole", value: "entire email", reason: "none" }, "entire email");
-    expect(el.value).toBe("United States");
+    expect(el.value).toBe("United Statesentire email");
+  });
+
+  it("replaces only the selected words with a smart value", () => {
+    const el = document.createElement("textarea"); el.value = "Dear old name, hello";
+    el.setSelectionRange(5, 13);
+    expect(applyPaste(el, { mode: "slice", value: "Maya Chen", reason: "match" }, "source")).toBe(true);
+    expect(el.value).toBe("Dear Maya Chen, hello");
   });
 
   it("fills an empty field with the whole chunk when there is no slice", () => {

@@ -18,6 +18,17 @@ describe("headed templates", () => {
     expect(matched(source, "Name").text).toBe("Zoë García");
   });
 
+  it("answers a one-line field from an inline header's own line", () => {
+    const bill = "Norr Press LLC\nDue: 12 May 2026\nBill to:\nKeel Ceramics\nDescription\nQty\nAmount\nHang tags\n500\n1240.00\nAmount due: 1240.00\nRemit to:\n88 Bond Street";
+    for (const [label, want] of [["Amount", "1240.00"], ["Due date", "12 May 2026"]]) {
+      const result = templateMatch(bill, field(label, "text"));
+      expect(result.status === "match" && result.candidate.text).toBe(want);
+    }
+    const note = "Company\nHybrid Audio\n\nTitle\nStaff Sound Designer\n\nAddress\n2140 Folsom St";
+    const company = templateMatch(note, field("Current company", "text"));
+    expect(company.status === "match" && company.candidate.text).toBe("Hybrid Audio");
+  });
+
   it("uses neighboring form labels for arbitrary standalone questions", () => {
     const source = "What are you building?\nA scheduling tool.\nWe started with clinics.\n\nWho needs it most?\nSmall teams.\n\nHow many users do you have?\n42";
     const candidate = matched(source, "Who needs it most?", ["What are you building?", "How many users do you have?"]);

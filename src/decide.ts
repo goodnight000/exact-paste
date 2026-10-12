@@ -2,7 +2,7 @@ import { candidates } from "./candidates";
 import { isEmail, isPhone, isSubstring, isUrl, lead, looksSecret, platformDomains, platformUrlOk, shapeOk, uniqueMatches, uniqueUrls, EMAIL_RE, PHONE_RE } from "./gates";
 import { addressFastPath } from "./address";
 import { businessFastPath } from "./business";
-import { nameFastPath, nameSlot } from "./names";
+import { nameFastPath, namePart, nameSlot } from "./names";
 import { templateMatch } from "./template";
 import type { Candidate, Decision, FieldInfo, JevAsk, JevChoice, JevNoul } from "./types";
 
@@ -25,7 +25,7 @@ function slice(value: string, reason: string): Decision {
 function fastPath(clipboard: string, field: FieldInfo): Decision | null {
   if (field.kind === "email") {
     const emails = uniqueMatches(clipboard, EMAIL_RE);
-    if (emails.length === 1 && isEmail(emails[0])) return slice(emails[0], "one-email");
+    if (emails.length === 1 && isEmail(emails[0]) && !/\b(?:do not|don’t|don't|not to|never)\s+(?:use|contact|email|send)\b/i.test(clipboard)) return slice(emails[0], "one-email");
   }
   const wantsUrl =
     field.kind === "url" ||
@@ -43,7 +43,8 @@ function fastPath(clipboard: string, field: FieldInfo): Decision | null {
   }
   if (field.kind === "tel") {
     const phones = uniqueMatches(clipboard, PHONE_RE);
-    if (phones.length === 1 && isPhone(phones[0])) return slice(phones[0], "one-phone");
+    if (phones.length === 1 && isPhone(phones[0]) && shapeOk(field, phones[0]) &&
+      (!/^\d+$/.test(phones[0]) || clipboard.trim() === phones[0])) return slice(phones[0], "one-phone");
   }
   const slot = nameSlot(field);
   if (slot && slot !== "full") {
@@ -108,10 +109,22 @@ export async function decide(
   if (template.status === "ambiguous") return whole(clipboard, `ambiguous-template-${template.reason}`);
   if (template.status === "match") {
     if (!shapeOk(field, template.candidate.text, { exactHeader: true })) return whole(clipboard, "template-shape");
-    return slice(template.candidate.text, "template-header");
+    return slice(template.candidate.text, template.structured ? "template-header" : "template-suggestion");
   }
   const quick = fastPath(clipboard, field);
   if (quick) return quick;
+
+  // First/middle/last: Jev cannot pick "Maya" out of "Maya Chen" (candidates hold whole spans),
+  // so ask it for the person's full name the way a Full name field does, then split in code.
+  const slot = nameSlot(field);
+  if (slot && slot !== "full") {
+    const asFull: FieldInfo = { ...field, label: "Full name", placeholder: "", name: "name", id: "", autocomplete: "name" };
+    const person = await decide(clipboard, asFull, ask);
+    if (person.mode !== "slice") return person;
+    const part = namePart(person.value, slot);
+    if (!part || !isSubstring(clipboard, part) || !shapeOk(field, part)) return whole(clipboard, "not-a-name");
+    return slice(part, `${person.reason}-${slot}`);
+  }
   if (looksSecret(clipboard) || looksSecret(JSON.stringify(field))) return whole(clipboard, "secret");
   // The model must see every competing answer. Sending only a prefix and then
   // accepting a substring can silently ignore a conflicting value later on.

@@ -40,6 +40,22 @@ function askWith(answers: JevAnswers): JevAsk {
 }
 
 describe("decide", () => {
+  it("does not interpret words inside essay questions as name slots", async () => {
+    for (const target of [field("Describe the first name you chose for your product", "textarea"),
+      field("Describe your issue", "textarea", {name:"first_name",autocomplete:"given-name"})]) {
+      expect(await decide("Maya Chen", target, null)).toMatchObject({mode:"whole",value:"Maya Chen"});
+    }
+  });
+  it("requires review for a literal header inside introductory prose", async () => {
+    const text="Here is an example, not my biography:\n\nBio: example answer";
+    expect(await decide(text,field("Bio","textarea"),null)).toMatchObject({mode:"slice",reason:"template-suggestion"});
+  });
+  it("does not extract an order ID as a phone or a full phone as a country code", async () => {
+    expect((await decide("Your order number is 1234567890",field("Phone","tel"),null)).mode).toBe("whole");
+    const target=field("Country calling code","tel",{autocomplete:"tel-country-code"});
+    expect((await decide("Contact +1 415 555 0100",target,null)).mode).toBe("whole");
+    expect(await decide("Country calling code: +1",target,null)).toMatchObject({value:"+1",mode:"slice"});
+  });
   it("pastes the only email into an email field without calling Jev", async () => {
     const ask = askWith({});
     const result = await decide(resume, emailField, ask);
@@ -133,7 +149,7 @@ describe("decide", () => {
     const answer = "Our thesis: make time useful.\r\n".repeat(600).trimEnd();
     const clipboard = "Old notes\n".repeat(2000) + `\r\n# What are you building?\r\n${answer}\r\n\r\n# Who needs it most?\r\nClinics.`;
     const ask = askWith({});
-    expect(await decide(clipboard, field("What are you building?", "textarea"), ask)).toEqual({ value: answer, mode: "slice", reason: "template-header" });
+    expect(await decide(clipboard, field("What are you building?", "textarea"), ask)).toEqual({ value: answer, mode: "slice", reason: "template-suggestion" });
     expect(ask).not.toHaveBeenCalled();
   });
 

@@ -9,7 +9,7 @@ import type { FieldKind } from "../src/types";
 //   vault: string               — what the worker reads. Always vaultFrom(profile), written in the same set().
 // Unsaved edits live in chrome.storage.session under "optionsDraft" (memory only) so closing the popup keeps them.
 
-type Draft = { profile: Profile; apiKey: string };
+type Draft = { profile: Profile; apiKey: string; useSaved: boolean };
 
 const PRESETS: Record<string, { label: string; type: FieldKind; placeholder: string; autocomplete: string }> = {
   name: { label: "Name", type: "text", placeholder: "Ada Park", autocomplete: "name" },
@@ -23,7 +23,7 @@ const PRESETS: Record<string, { label: string; type: FieldKind; placeholder: str
 function readDraft(raw: unknown): Draft | null {
   const draft = raw as Partial<Draft> | undefined;
   const profile = readProfile(draft?.profile);
-  return profile && typeof draft?.apiKey === "string" ? { profile, apiKey: draft.apiKey } : null;
+  return profile && typeof draft?.apiKey === "string" ? { profile, apiKey: draft.apiKey, useSaved: draft.useSaved === true } : null;
 }
 
 // Why a filled preset value would be refused at paste time, judged by the same gates the worker uses. Custom fields are free text.
@@ -55,9 +55,12 @@ const notes = el<HTMLTextAreaElement>("#notes");
 const key = el<HTMLInputElement>("#key");
 const reveal = el<HTMLButtonElement>("#reveal");
 const jevState = el<HTMLParagraphElement>("#jev-state");
-const preview = el<HTMLPreElement>("#preview");
+const jevMeta = el<HTMLSpanElement>("#jev-meta");
+const notesMeta = el<HTMLSpanElement>("#notes-meta");
+const kinds = el<HTMLDivElement>("#kinds");
+const bar = el<HTMLElement>("#bar");
 const enabled = el<HTMLInputElement>("#enabled");
-const enabledLabel = el<HTMLSpanElement>("#enabled-label");
+const smartLabel = el<HTMLElement>("#smart-label");
 const status = el<HTMLParagraphElement>("#status");
 const save = el<HTMLButtonElement>("#save");
 const discard = el<HTMLButtonElement>("#discard");
@@ -65,7 +68,37 @@ const full = el<HTMLAnchorElement>("#full");
 // Inert until stored settings load, so nothing typed early is overwritten and a failed load can never save over them.
 const editor = el<HTMLElement>("main");
 
-let saved: Draft = { profile: { version: 1, fields: [], notes: "" }, apiKey: "" };
+const useSaved = el<HTMLInputElement>("#use-saved");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+document.getElementById("shortcuts")!.addEventListener("click", () => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" }));
+
+const SVG = "http://www.w3.org/2000/svg";
+function icon(name: string): SVGSVGElement {
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "i"); svg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS(SVG, "use"); use.setAttribute("href", `#i-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+const keycaps = (keys: string[]): HTMLElement[] =>
+  keys.map((key) => Object.assign(document.createElement("kbd"), { textContent: key.trim(), ariaHidden: "true" }));
+const mac = /Mac/.test(navigator.platform);
+el("#normal-keys").replaceChildren(
+  Object.assign(document.createElement("span"), { className: "sr", textContent: mac ? "Command V" : "Control V" }),
+  ...keycaps(mac ? ["⌘", "V"] : ["Ctrl", "V"]));
+
+// Chrome reports "⌥⇧V" on macOS and "Alt+Shift+V" elsewhere; both become keycaps.
+void chrome.commands.getAll().then(commands => {
+  const shortcut = commands.find(command => command.name === "smart-paste")?.shortcut ?? "";
+  const keys = shortcut.includes("+") ? shortcut.split("+") : [...shortcut];
+  const state = document.getElementById("shortcut-state")!;
+  const label = Object.assign(document.createElement("span"), { className: "sr", textContent: shortcut ? `Your shortcut: ${shortcut}` : "No shortcut assigned" });
+  state.replaceChildren(label, ...(shortcut
+    ? keycaps(keys)
+    : [Object.assign(document.createElement("span"), { className: "none", textContent: "No shortcut set", ariaHidden: "true" })]));
+});
+let saved: Draft = { profile: { version: 1, fields: [], notes: "" }, apiKey: "", useSaved: false };
 let fields: ProfileField[] = [];
 let builtInJev = false;
 let saving = false;
@@ -78,31 +111,50 @@ full.addEventListener("click", (event) => {
   void chrome.runtime.openOptionsPage();
   window.close();
 });
+el<HTMLAnchorElement>("#tutorial").addEventListener("click", (event) => {
+  event.preventDefault();
+  void chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+  if (isPopup) window.close();
+});
 
 function current(): Draft {
-  return { profile: { version: 1, fields: fields.map((f) => ({ ...f })), notes: notes.value }, apiKey: key.value.trim() };
+  return { profile: { version: 1, fields: fields.map((f) => ({ ...f })), notes: notes.value }, apiKey: key.value.trim(), useSaved: useSaved.checked };
 }
 
 function same(a: Draft, b: Draft): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+let savedTimer = 0;
 function say(text: string, tone: "" | "ok" | "bad" = ""): void {
-  status.textContent = text;
+  status.replaceChildren(...(tone && text ? [icon(tone === "ok" ? "check" : "alert")] : []), text);
   status.dataset.tone = tone;
+  window.clearTimeout(savedTimer);
+  // "Saved" is a confirmation, not a state: it leaves on its own so the bar can get out of the way.
+  if (tone === "ok") savedTimer = window.setTimeout(() => { if (status.textContent === text && save.disabled) { say(""); paintBar(); } }, 2400);
+  paintBar();
+}
+
+function paintBar(): void {
+  const shown = !save.disabled || saving || !!status.textContent;
+  bar.toggleAttribute("data-shown", shown);
+  bar.inert = !shown;
 }
 
 function paintEnabled(on: boolean): void {
   enabled.checked = on;
-  enabledLabel.textContent = on ? "On" : "Off";
+  smartLabel.textContent = on ? "Smart paste once" : "Smart paste is off";
+  document.getElementById("shortcut")!.toggleAttribute("data-off", !on);
+  // Off is the one state worth surfacing: the switch to turn it back on stays in view.
+  if (!on) el<HTMLDetailsElement>("#shortcut-more").open = true;
 }
 
 function paintJev(): void {
   const typed = key.value.trim();
-  if (typed && typed !== saved.apiKey) jevState.textContent = "Save to use this key.";
-  else if (saved.apiKey) jevState.textContent = "Jev is used when on-device matching is unsure.";
-  else if (builtInJev) jevState.textContent = "Using the built-in key. Jev is used when on-device matching is unsure.";
-  else jevState.textContent = "";
+  if (typed && typed !== saved.apiKey) { jevState.textContent = "Save to use this key."; jevMeta.textContent = "Unsaved key"; }
+  else if (saved.apiKey) { jevState.textContent = "Available when you choose Ask Jev. Nothing is sent automatically."; jevMeta.textContent = "Key saved"; }
+  else if (builtInJev) { jevState.textContent = "Using the built-in key. Jev is used when on-device matching is unsure."; jevMeta.textContent = "Built-in key"; }
+  else { jevState.textContent = ""; jevMeta.textContent = "Optional"; }
 }
 
 let draftTimer = 0;
@@ -121,32 +173,35 @@ function changed(): void {
   const dirty = !same(current(), saved);
   save.disabled = !dirty || saving;
   discard.hidden = !dirty;
-  preview.textContent = vaultFrom(current().profile) || "Nothing saved yet.";
+  const lines = notes.value.trim() ? notes.value.trim().split("\n").length : 0;
+  notesMeta.textContent = lines ? `${lines} ${lines === 1 ? "line" : "lines"}` : "Empty";
   if (dirty && status.dataset.tone !== "bad") say("Unsaved changes");
   if (!dirty && status.textContent === "Unsaved changes") say("");
+  paintBar();
   paintJev();
   window.clearTimeout(draftTimer);
   draftTimer = window.setTimeout(writeDraft, 150);
 }
 
 function paintAddButtons(): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>(".add button")) {
+  for (const button of kinds.querySelectorAll<HTMLButtonElement>("button[data-kind]")) {
     const kind = button.dataset.kind ?? "custom";
     button.hidden = kind !== "custom" && fields.some((f) => f.kind === kind);
   }
 }
 
-function renderRows(focusIndex?: number, focusPart: "name" | "value" = "value"): void {
+function renderRows(focusIndex?: number, focusPart: "name" | "value" = "value", entering?: number): void {
   rows.replaceChildren();
   if (!fields.length) {
     const empty = document.createElement("li");
     empty.className = "empty";
-    empty.textContent = "No details yet. Add the ones you paste often.";
+    empty.textContent = "Nothing saved yet.";
     rows.append(empty);
   }
   fields.forEach((field, index) => {
     const preset = PRESETS[field.kind];
     const li = document.createElement("li");
+    if (index === entering) li.className = "enter";
 
     const name = document.createElement("input");
     name.className = "name";
@@ -156,7 +211,7 @@ function renderRows(focusIndex?: number, focusPart: "name" | "value" = "value"):
 
     const value: HTMLInputElement | HTMLTextAreaElement = preset
       ? Object.assign(document.createElement("input"), { type: preset.type, autocomplete: "off", placeholder: preset.placeholder })
-      : Object.assign(document.createElement("textarea"), { rows: 1, placeholder: "Value (can be several lines)" });
+      : Object.assign(document.createElement("textarea"), { rows: 1, placeholder: "Value, one or more lines" });
     value.className = "value";
     value.value = field.value;
     value.spellcheck = !preset || preset.type === "text";
@@ -164,9 +219,10 @@ function renderRows(focusIndex?: number, focusPart: "name" | "value" = "value"):
 
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "remove";
-    remove.textContent = "×";
+    remove.className = "icon-btn";
+    remove.append(icon("close"));
     remove.setAttribute("aria-label", `Remove ${field.label || "field"}`);
+    remove.title = "Remove";
 
     // An edit either way can fix the row, so it drops the row's markers and the error that pointed at them.
     const clearInvalid = (): void => {
@@ -188,24 +244,37 @@ function renderRows(focusIndex?: number, focusPart: "name" | "value" = "value"):
       changed();
     });
     remove.addEventListener("click", () => {
-      fields.splice(index, 1);
-      renderRows(Math.min(index, fields.length - 1));
+      // The data changes now; only the row's exit waits. Any re-render (add, save, discard) ends the exit early.
+      const at = fields.indexOf(field);
+      if (at < 0) return;
+      fields.splice(at, 1);
       paintAddButtons();
-      if (!fields.length) document.querySelector<HTMLButtonElement>(".add button:not([hidden])")?.focus();
       changed();
+      const next = (): void => {
+        renderRows(Math.min(at, fields.length - 1));
+        if (!fields.length) el<HTMLButtonElement>("#add").focus();
+      };
+      if (reduceMotion.matches) { next(); return; }
+      li.dataset.leaving = "";
+      li.inert = true;
+      window.setTimeout(() => { if (li.isConnected) next(); }, 140);
     });
 
-    li.append(name, value, remove);
+    const stack = document.createElement("div");
+    stack.className = "stack";
+    stack.append(name, value);
+    li.append(icon(preset ? field.kind : "custom"), stack, remove);
     rows.append(li);
     if (index === focusIndex) (focusPart === "name" ? name : value).focus();
   });
 }
 
-for (const button of document.querySelectorAll<HTMLButtonElement>(".add button")) {
+for (const button of kinds.querySelectorAll<HTMLButtonElement>("button[data-kind]")) {
   button.addEventListener("click", () => {
     const kind = button.dataset.kind ?? "custom";
+    kinds.hidePopover();
     fields.push({ kind, label: PRESETS[kind]?.label ?? "", value: "" });
-    renderRows(fields.length - 1, kind === "custom" ? "name" : "value");
+    renderRows(fields.length - 1, kind === "custom" ? "name" : "value", fields.length - 1);
     paintAddButtons();
     changed();
   });
@@ -215,6 +284,7 @@ function load(state: Draft): void {
   fields = state.profile.fields.map((f) => ({ ...f }));
   notes.value = state.profile.notes;
   key.value = state.apiKey;
+  useSaved.checked = state.useSaved;
   renderRows();
   paintAddButtons();
   changed();
@@ -222,6 +292,8 @@ function load(state: Draft): void {
 
 async function commit(): Promise<void> {
   if (saving || save.disabled) return;
+  // Rows are matched to fields by position below, so a row still fading out must leave first.
+  if (rows.querySelector("[data-leaving]")) renderRows();
   const missing = fields.findIndex((f) => f.value.trim() && !f.label.trim());
   if (missing >= 0) {
     const name = rows.children[missing]?.querySelector<HTMLInputElement>(".name");
@@ -244,8 +316,9 @@ async function commit(): Promise<void> {
   save.disabled = true;
   save.textContent = "Saving…";
   save.setAttribute("aria-busy", "true");
+  paintBar();
   try {
-    await chrome.storage.local.set({ profile: next.profile, vault: vaultFrom(next.profile), apiKey: next.apiKey });
+    await chrome.storage.local.set({ profile: next.profile, vault: vaultFrom(next.profile), apiKey: next.apiKey, useSaved: next.useSaved });
     saved = next;
     say("Saved", "ok");
     // Edits made while saving stay in the draft; otherwise this clears it.
@@ -262,6 +335,7 @@ async function commit(): Promise<void> {
 
 notes.addEventListener("input", changed);
 key.addEventListener("input", changed);
+useSaved.addEventListener("change", changed);
 save.addEventListener("click", () => void commit());
 discard.addEventListener("click", () => {
   load(saved);
@@ -280,7 +354,9 @@ window.addEventListener("pagehide", writeDraft);
 reveal.addEventListener("click", () => {
   const show = key.type === "password";
   key.type = show ? "text" : "password";
-  reveal.textContent = show ? "Hide" : "Show";
+  reveal.replaceChildren(icon(show ? "eye-off" : "eye"));
+  reveal.setAttribute("aria-label", show ? "Hide key" : "Show key");
+  reveal.title = show ? "Hide key" : "Show key";
   reveal.setAttribute("aria-pressed", String(show));
 });
 
@@ -297,12 +373,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 void (async () => {
   try {
-    const stored = await chrome.storage.local.get(["apiKey", "enabled", "vault", "profile"]);
+    const stored = await chrome.storage.local.get(["apiKey", "enabled", "vault", "profile", "useSaved"]);
     paintEnabled(stored.enabled !== false);
     const source = savedSource(stored);
     saved = {
       profile: { version: 1, fields: source.fields ?? [], notes: source.text },
       apiKey: typeof stored.apiKey === "string" ? stored.apiKey.trim() : "",
+      useSaved: stored.useSaved === true,
     };
     // Structured fields that no longer produce the saved vault are dropped: the vault is what pastes, so it becomes notes.
     const drifted = stored.profile !== undefined && !source.fields && source.text !== "";
@@ -314,7 +391,10 @@ void (async () => {
       say("Restored unsaved changes");
     } else {
       load(saved);
-      if (drifted) say("Saved text was changed elsewhere and is shown under notes. Review, then save.");
+      if (drifted) {
+        el<HTMLDetailsElement>("#notes-more").open = true;
+        say("Saved text changed elsewhere and is shown under Long answers. Review, then save.");
+      }
     }
     if (!saved.apiKey) {
       // With no saved key, any key the worker reports is the built-in one.

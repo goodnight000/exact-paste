@@ -152,8 +152,12 @@ export function shapeOk(field: FieldInfo, value: string, options: { exactHeader?
     case "url":
       return isUrl(trimmed);
     case "tel":
+      if (/\btel-country-code\b/.test(field.autocomplete)) return /^\+?\d{1,4}$/.test(trimmed);
+      if (/\btel-extension\b/.test(field.autocomplete)) return /^\d{1,8}$/.test(trimmed);
       return isPhone(trimmed);
     case "text":
+      if (/^(invoice date|due date|payment due date)\s*\*?$/i.test(field.label.trim()) &&
+        !/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[\p{L}.]+\s+\d{4}|[\p{L}.]+\s+\d{1,2},?\s+\d{4})$/u.test(trimmed)) return false;
       if (isEmail(trimmed) && !/email|e-mail|user/i.test(field.label)) return false;
       if (isUrl(trimmed) && (!/url|website|profile|link|http|github|twitter|instagram|facebook|tiktok|youtube/i.test(field.label) || /\busername\b/i.test(field.label))) return false;
       if (!options.exactHeader && trimmed.length > 120) return false;

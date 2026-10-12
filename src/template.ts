@@ -204,7 +204,7 @@ export type TemplateMatch =
   | { status: "none" }
   | { status: "mismatch" }
   | { status: "ambiguous"; reason: "conflicting-headers" | "empty-header" | "unclear-boundary" }
-  | { status: "match"; candidate: Candidate };
+  | { status: "match"; candidate: Candidate; structured: boolean };
 
 export function templateMatch(source: string, field: FieldInfo): TemplateMatch {
   const targets = labelsFor(field);
@@ -225,7 +225,23 @@ export function templateMatch(source: string, field: FieldInfo): TemplateMatch {
         return { status: "ambiguous", reason: "unclear-boundary" };
       }
     }
-    matches.push(answerCandidate(source, header, ends[index]!, index));
+    let end = ends[index]!;
+    // A one-line field takes the rest of an inline header's line ("Amount due: 1240.00"),
+    // or the first paragraph under its own-line header, not everything up to the next
+    // recognized header.
+    if (field.kind !== "textarea") {
+      const rest = source.slice(header.answerStart, end);
+      const lineEnd = rest.search(/[\r\n]/);
+      const inline = header.kind === "colon" && lineEnd >= 0 && rest.slice(0, lineEnd).trim();
+      const paragraph = rest.search(/\S[^\S\r\n]*(?:\r\n|\r|\n)[^\S\r\n]*(?:\r\n|\r|\n)/);
+      if (inline) end = header.answerStart + lineEnd;
+      else if (paragraph >= 0) end = header.answerStart + paragraph + 1;
+    }
+    const candidate = answerCandidate(source, header, end, index);
+    // A bare label over several lines (a table's "Amount" column) cannot fill a one-line
+    // field, so it must not veto an explicit "Amount due: 1240.00".
+    if (field.kind !== "textarea" && header.kind === "plain" && /[\r\n]/.test(candidate.text)) continue;
+    matches.push(candidate);
   }
   if (!matches.length) {
     const target = [...targets][0] ?? "";
@@ -239,7 +255,7 @@ export function templateMatch(source: string, field: FieldInfo): TemplateMatch {
   if (new Set(matches.map((candidate) => candidate.text)).size !== 1) {
     return { status: "ambiguous", reason: "conflicting-headers" };
   }
-  return { status: "match", candidate: matches[0]! };
+  return { status: "match", candidate: matches[0]!, structured: !source.slice(0, headers[0]?.start ?? 0).trim() };
 }
 
 export function templateCandidates(source: string): Candidate[] {

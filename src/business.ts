@@ -26,7 +26,7 @@ export function invoiceNumbers(clipboard: string): string[] {
   return unique(clipboard, found);
 }
 
-const FIRM = /\b(Electric|Studio|Press|Labs|Audio|Builds|Partners|Group|Holdings|Digital|Media|Works|Company)\b/;
+export const FIRM = /\b(Electric|Studio|Press|Labs|Audio|Builds|Partners|Group|Holdings|Digital|Media|Works|Company)\b/;
 
 export function orgNames(clipboard: string): string[] {
   const found: string[] = [];
@@ -38,7 +38,7 @@ export function orgNames(clipboard: string): string[] {
   )) {
     if (match[1]) found.push(match[1]);
   }
-  for (const line of clipboard.split(/\r?\n/).map((row) => row.trim())) {
+  for (const line of clipboard.split(/\r?\n/).map((row) => row.trim().replace(/^[^:]{1,40}:\s*/, ""))) {
     if (
       line &&
       FIRM.test(line) &&
@@ -87,7 +87,7 @@ export function dueDates(clipboard: string): string[] {
 }
 
 function blob(field: FieldInfo): string {
-  return `${field.label} ${field.name} ${field.autocomplete} ${field.placeholder}`.toLowerCase();
+  return (field.label || field.placeholder || field.name || field.autocomplete).toLowerCase().replace(/^(your|my|the)\s+/, "").replace(/[\s:*]+$/, "");
 }
 
 export function businessFastPath(
@@ -95,19 +95,21 @@ export function businessFastPath(
   field: FieldInfo,
 ): { value: string; reason: string } | null {
   const text = blob(field);
-  if (/\binvoice\b|\binv\b/.test(text)) {
+  if (/^(invoice(?: number| no\.?| #)?|inv)$/.test(text)) {
     const ids = invoiceNumbers(clipboard);
     if (ids.length === 1 && ids[0]) return { value: ids[0], reason: "one-invoice" };
   }
-  if (field.autocomplete === "organization" || /\b(vendor|company|organization|payee|supplier)\b/.test(text)) {
+  if (
+    /^(vendor|company|organization|payee|supplier)(?: name)?$/.test(text)
+  ) {
     const orgs = orgNames(clipboard);
     if (orgs.length === 1 && orgs[0]) return { value: orgs[0], reason: "one-org" };
   }
-  if (/\bamount\b|\btotal\b|\bbalance\b/.test(text) && !/\bdue date\b/.test(text)) {
+  if (/^(amount(?: due)?|total|balance)$/.test(text)) {
     const money = amounts(clipboard);
     if (money.length === 1 && money[0]) return { value: money[0], reason: "one-amount" };
   }
-  if (/\bdue date\b|\binvoice date\b/.test(text)) {
+  if (/^(due date|payment due date|due)$/.test(text)) {
     const dates = dueDates(clipboard);
     if (dates.length === 1 && dates[0]) return { value: dates[0], reason: "one-due-date" };
   }

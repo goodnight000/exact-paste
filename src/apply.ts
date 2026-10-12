@@ -16,26 +16,21 @@ export function applyPaste(
   const max = el.maxLength;
   const normalize = (value: string): string => el instanceof HTMLTextAreaElement
     ? value.replace(/\r\n?/g, "\n") : value.replace(/[\r\n]/g, "");
-  if (decision.mode === "slice") {
-    const value = normalize(decision.value);
-    // A shortened URL or answer is a different value. Keep the field intact.
-    if (max >= 0 && value.length > max) return false;
-    insertValue(el, value);
-    return el.value === value;
-  }
-  const start = el.selectionStart ?? 0;
-  const end = el.selectionEnd ?? 0;
-  const empty = el.value.length === 0;
-  const allSelected = !empty && start === 0 && end === el.value.length;
-  if (!empty && !allSelected && start === end) return false;
-  if (empty || allSelected) {
-    const value = normalize(clipboard);
-    insertValue(el, max >= 0 ? prefix(value, max) : value);
-    return true;
-  }
+  const value = normalize(decision.mode === "slice" ? decision.value : clipboard);
+  const unknownSelection = el.selectionStart === null;
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
   const before = el.value.slice(0, start);
   const suffix = el.value.slice(end);
-  const room = max >= 0 ? Math.max(0, max - before.length - suffix.length) : clipboard.length;
-  insertValue(el, before + prefix(normalize(clipboard), room) + suffix);
-  return true;
+  const room = max >= 0 ? Math.max(0, max - before.length - suffix.length) : value.length;
+  if (decision.mode === "slice") {
+    // A shortened URL or answer is a different value. Keep the field intact.
+    if (value.length > room) return false;
+    const expected = before + value + suffix;
+    insertValue(el, value);
+    return unknownSelection ? el.value.includes(value) : el.value === expected;
+  }
+  const inserted = prefix(value, room);
+  insertValue(el, inserted);
+  return unknownSelection ? el.value.includes(inserted.trim()) : el.value === before + inserted + suffix;
 }

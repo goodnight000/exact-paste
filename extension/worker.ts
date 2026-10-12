@@ -21,8 +21,9 @@ async function paintAction(): Promise<void> {
   await chrome.action.setTitle({ title: on ? "Exact Paste is on" : "Exact Paste is off" });
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   void paintAction();
+  if (details.reason === "install") void chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
 });
 chrome.runtime.onStartup.addListener(() => {
   void paintAction();
@@ -32,12 +33,15 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 void paintAction();
 
-chrome.commands.onCommand.addListener((command) => {
-  if (command !== "toggle-exact-paste") return;
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command !== "smart-paste") return;
   void (async () => {
-    const on = !(await enabled());
-    await chrome.storage.local.set({ enabled: on });
-  })();
+    if (!(await enabled())) return;
+    const current = tab ?? (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+    if (current?.url === chrome.runtime.getURL("welcome.html")) {
+      await chrome.runtime.sendMessage({ type: "tutorial-smart-paste" });
+    } else if (current?.id !== undefined) await chrome.tabs.sendMessage(current.id, { type: "smart-paste" });
+  })().catch(() => undefined);
 });
 
 function validField(raw: unknown): raw is FieldInfo {
@@ -49,13 +53,14 @@ function validField(raw: unknown): raw is FieldInfo {
     Array.isArray(field.nearby) && field.nearby.every((label) => typeof label === "string");
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, reply) => {
+chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const text = typeof message?.text === "string" ? message.text : "";
   void (async () => {
     const key = await apiKey();
     const on = await enabled();
     if (message?.type === "status") {
-      reply({ ready: on, enabled: on, jev: Boolean(key) });
+      const commands = await chrome.commands.getAll();
+      reply({ ready: on, enabled: on, jev: Boolean(key), shortcut: commands.find((item) => item.name === "smart-paste")?.shortcut ?? "" });
       return;
     }
     if (message?.type !== "decide") {
@@ -63,6 +68,7 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
       return;
     }
     const field: unknown = message.field;
+    if (sender.id !== chrome.runtime.id || !sender.tab) { reply({ value: text, mode: "whole", reason: "sender" }); return; }
     if (!validField(field)) {
       reply({ value: text, mode: "whole", reason: "invalid-field" });
       return;
@@ -71,9 +77,10 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
       reply({ value: text, mode: "whole", reason: "off" });
       return;
     }
-    const source = savedSource(await chrome.storage.local.get(["vault", "profile"]));
+    const stored = await chrome.storage.local.get(["vault", "profile", "useSaved"]);
+    const source = stored.useSaved === true ? savedSource(stored) : { text: "", fields: [] };
     const started = performance.now();
-    const provider = key ? createAsk(key) : null;
+    const provider = key && message.model === true ? createAsk(key) : null;
     const ask: JevAsk | null = provider ? (state, questions, timeoutMs) => {
       const remaining = 4500 - (performance.now() - started);
       if (remaining <= 0) return Promise.reject(new Error("Paste deadline"));

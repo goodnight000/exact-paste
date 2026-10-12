@@ -27,6 +27,11 @@ describe("usPlace", () => {
 });
 
 describe("address fast path", () => {
+  it("keeps the apartment distinct from the street and in the full address", async () => {
+    const text = "914 N Damen Ave\nApt 3B\nChicago, IL 60622";
+    expect((await decide(text, field("Address line 2", "text", { autocomplete: "address-line2" }), null)).value).toBe("Apt 3B");
+    expect((await decide(text, field("Street address", "textarea", { autocomplete: "street-address" }), null)).value).toBe("914 N Damen Ave\nApt 3B");
+  });
   it("fills city, state, zip, and street without Jev", async () => {
     const city = field("City", "text", { autocomplete: "address-level2" });
     const state = field("State", "text", { autocomplete: "address-level1" });
